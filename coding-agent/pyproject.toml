@@ -1,0 +1,24 @@
+[project]
+name = "coding-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "jingjun", email = "254032134@qq.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=3.13.0",
+]
+
+[project.scripts]
+coding-agent = "coding_agent.main:main"
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
