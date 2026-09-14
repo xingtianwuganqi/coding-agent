@@ -18,13 +18,27 @@ WORKSPACE = Path.cwd().resolve()
 MODEL = "deepseek-v4-flash"
 
 # 最大模型循环次数
-MAX_MODEL_TURNS = 50
+MAX_MODEL_TURNS = 80
 # 最大工具调用次数
-MAX_TOOL_CALLS = 100
+MAX_TOOL_CALLS = 120
 # 最大上下文
 MAX_CONTEXT_TURNS = 8
 # 保持最近的turns
 KEEP_RECENT_TURNS = 6
+# 最大token数
+MAX_CONTEXT_TOKENS = 32_000
+# 模型输出
+RESERVED_OUTPUT_TOKENS = 4_000
+# 预留token，安全余量
+SAFETY_MARGIN_TOKENS = 2_000
+# Tool Output Truncation 单次 Tool Result 最多给 LLM 大约 12000 个字符。
+MAX_TOOL_OUTPUT_CHARS = 12_000
+
+DEFAULT_READ_LINES = 200
+
+MAX_READ_LINES = 400
+
+MAX_SEARCH_RESULTS = 20
 
 SYSTEM_PROMPT = """
 You are a coding agent working inside a software project.
@@ -83,6 +97,15 @@ When creating a plan:
   "diff_inspected" evidence.
 
 - Other tasks should normally use "none".
+
+For large files:
+
+- Do not read the entire file unless necessary.
+- Use search_text to locate relevant symbols or text.
+- Read only the relevant line range.
+- Expand the range if more context is needed.
+- Avoid repeatedly reading content that is not relevant.
+
 """
 
 BLOCKED_COMMANDS = [
@@ -113,19 +136,71 @@ TOOLS = [
     {
         "type": "function",
         "name": "read_file",
-        "description": "Read the text content of a file in the workspace.",
+        "description": (
+            "Read a range of lines from a text file "
+            "inside the workspace. "
+            "Use line ranges for large files."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 "path": {
                     "type": "string",
-                    "description": "File path relative to the workspace",
-                }
+                    "description": (
+                        "File path relative "
+                        "to the workspace."
+                    ),
+                },
+                "start_line": {
+                    "type": "integer",
+                    "description": (
+                        "First line to read. "
+                        "Line numbers start at 1."
+                    ),
+                },
+                "end_line": {
+                    "type": "integer",
+                    "description": (
+                        "Last line to read."
+                    ),
+                },
             },
-            "required": ["path"],
+            "required": [
+                "path",
+            ],
             "additionalProperties": False,
-        }
-                
+        },
+    },
+    {
+        "type": "function",
+        "name": "search_text",
+        "description": (
+            "Search for text inside files in the workspace. "
+            "Returns file paths, line numbers, "
+            "and matching lines."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": (
+                        "Text to search for."
+                    ),
+                },
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "File or directory to search. "
+                        "Defaults to the workspace."
+                    ),
+                },
+            },
+            "required": [
+                "query",
+            ],
+            "additionalProperties": False,
+        },
     },
     {
         "type": "function",
@@ -296,12 +371,13 @@ TOOLS = [
 TOOL_PERMISSIONS = {
     "list_files": Permission.SAFE,
     "read_file": Permission.SAFE,
+    "search_text": Permission.SAFE,
     "write_file": Permission.WRITE,
     "replace_text": Permission.WRITE,
     "run_command": Permission.SAFE,
     "set_plan": Permission.SAFE,
     "update_task": Permission.SAFE,
-    "get_plan": Permission.SAFE
+    "get_plan": Permission.SAFE,
 }
  
 
@@ -334,19 +410,168 @@ def list_files(path: str) -> str:
     return "\n".join(result) or "(empty directory)"
 
 # 读取文件
-def read_file(path: str) -> str:
+def read_file(
+        path: str, 
+        start_line: int = 1, 
+        end_line: int | None = None
+) -> str:
     target = resolve_path(path)
     if not target.exists():
         return f"File does not exist: {path}"
     if not target.is_file():
         return f"Path is not a file: {path}"
+    try:
+        content = target.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return (
+            f"Cannot read binary or"
+            f"non-UTF-8 file:{path}"
+        )
 
-    content = target.read_text(encoding="utf-8")
+    lines = content.splitlines()
+    total_lines = len(lines)
 
-    if len(content) > 20_000:
-        return content[:20_000] + "\n\n[truncated]"
-    
-    return content
+    if total_lines == 0:
+        return (
+            f"File: {path}\n"
+            f"(empty file)"
+        )
+
+    if start_line < 1:
+        start_line = 1
+
+    if start_line > total_lines:
+        return (
+            f"Start line {start_line} "
+            f"is beyond the end of file.\n"
+            f"Total lines: {total_lines}"
+        )
+
+    if end_line is None:
+        end_line = (
+            start_line 
+            + DEFAULT_READ_LINES
+            - 1
+        )
+
+    end_line= min(end_line, total_lines)
+
+    requested_lines = (
+        end_line 
+        - start_line
+        + 1
+    )
+
+    if requested_lines > MAX_READ_LINES:
+        end_line = (
+            start_line
+            + MAX_READ_LINES
+            - 1
+        )
+
+        end_line = min(
+            end_line,
+            total_lines,
+        )
+
+    selected_lines = lines[
+        start_line - 1:end_line
+    ]
+
+    numbered_lines = []
+
+    for line_number, line in enumerate(
+        selected_lines, start=start_line
+    ):
+        numbered_lines.append(
+            f"{line_number:4}:{line}"
+        )
+
+    result = [
+        f"file: {path}",
+        (
+            f"Lines {start_line}-{end_line}"
+            f"of {total_lines}"
+        ),
+        "",
+        "\n".join(numbered_lines),
+    ]
+
+    if end_line < total_lines:
+        result.append("")
+        result.append(
+            (
+                "More lines are available. "
+                f"Continue from line "
+                f"{end_line + 1} if needed."
+            )
+        )
+
+    return "\n".join(result)
+
+def search_text(
+        query: str,
+        path: str = "."
+) -> str:
+    target = resolve_path(path)
+
+    if not target.exists():
+        return (
+            f"Path does not exist: {path}"
+        )
+
+    files = []
+
+    if target.is_file():
+        files.append(target)
+
+    else:
+        for file in target.rglob("*"):
+            if file.is_file():
+                files.append(file)
+
+    results = []
+    for file in files:
+        try: 
+            content = file.read_text(
+                encoding="utf-8"
+            )
+        except (UnicodeDecodeError, PermissionError):
+            continue
+
+        for line_number, line in enumerate(
+            content.splitlines(),
+            start=1
+        ):
+            if query.lower() in line.lower():
+                relative = file.relative_to(
+                    WORKSPACE
+                )
+
+                results.append(
+                    (
+                        f"{relative}:"
+                        f"{line_number}: "
+                    )
+                )
+
+                if (
+                    len(results)
+                    >= MAX_SEARCH_RESULTS
+                ):
+                    return (
+                        "\n".join(results)
+                        + "\n\n"
+                        + "[Search results truncated]"
+                    )
+
+    if not results:
+        return (
+            f"No matches found for: "
+            f"{query}"
+        )
+
+    return "\n".join(results)
 
 # 写入文件
 def write_file(path: str, content: str) -> FileOperationResult:
@@ -543,12 +768,18 @@ def format_command_result(
 ) -> str:
     parts = []
     if result.stdout:
+        stdout = truncate_tail(
+            result.stdout.strip()
+        )
         parts.append(
-            f"STDOUT:\n{result.stdout.strip()}\n"
+            f"STDOUT:\n{stdout}\n"
         )
     if result.stderr:
+        stderr = truncate_tail(
+            result.stderr.strip()
+        )
         parts.append(
-            f"STDERR:\n{result.stderr.strip()}\n"
+            f"STDERR:\n{stderr}\n"
         )
     parts.append(
         f"EXIT CODE: {result.returncode}"
@@ -737,6 +968,10 @@ def execute_tool(
                 record_command_evidence(state=state, result=result)
                 return format_command_result(result=result)
             return result
+        elif name == "search_text":
+            return search_text(
+                **arguments
+            )
         else:
             return f"Unknown tool: {name}"
     except Exception as e:
@@ -851,7 +1086,18 @@ def build_model_input(
             }
         )
 
-    for turn in history_turns:
+    # 最近内容的预算
+    recent_budget = get_recent_context_budget(
+        task,
+        state
+    )
+
+    selected_turns = select_recent_turns(
+        history_turns,
+        recent_budget
+    )
+
+    for turn in selected_turns:
         input_items.extend(turn)
 
     return input_items
@@ -998,29 +1244,309 @@ def summarize_history(
 
     return response.output_text.strip()
 
+# 压缩历史数据
 def compress_history(
-        state: AgentState, 
-        history_turns: list[list]
+    task: str,
+    state: AgentState,
+    history_turns: list[list],
 ) -> None:
-    if (len(history_turns) <= MAX_CONTEXT_TURNS):
-        return 
+    while True:
+        input_budget = get_input_token_budget()
+        fixed_tokens = estimate_fixed_context_tokens(task, state)
 
-    compress_count = (
-        len(history_turns) - KEEP_RECENT_TURNS
+        # 没有历史可压缩时，检查固定内容是否已经超预算
+        if not history_turns:
+            if fixed_tokens > input_budget:
+                raise ValueError(
+                    "固定上下文超出预算，请缩短任务或摘要。"
+                )
+            return
+
+        recent_budget = max(input_budget - fixed_tokens, 0)
+        selected_turns = select_recent_turns(
+            history_turns,
+            recent_budget,
+        )
+
+        compress_count = len(history_turns) - len(selected_turns)
+
+        # 全部历史都能放下，不需要继续压缩
+        if compress_count == 0 and fixed_tokens <= input_budget:
+            return
+
+        # 固定内容已超预算，即使历史为空文本，也需要压缩处理
+        if compress_count == 0:
+            compress_count = len(history_turns)
+
+        old_turns = history_turns[:compress_count]
+        history_text = history_to_text(old_turns)
+
+        new_summary = summarize_history(
+            state.task_summary,
+            history_text,
+        )
+
+        # 总结失败时保留原历史
+        if not new_summary.strip():
+            raise ValueError("历史摘要为空，停止压缩以保留原始历史。")
+
+        state.task_summary = new_summary
+        del history_turns[:compress_count]
+
+        # 新摘要会改变预算，回到循环重新检查
+
+# 给llm前 12000字符
+def truncate_text(
+        text: str,
+        max_chars: int = MAX_TOOL_OUTPUT_CHARS
+) -> str:
+    if len(text) <= max_chars:
+        return text
+
+    return (
+        text[:max_chars]
+        + "\n\n"
+        + "[OUTPUT TRUNCATED]"
     )
 
-    old_turns = history_turns[:compress_count]
+def truncate_tail(
+        text: str,
+        max_chars: int = MAX_TOOL_OUTPUT_CHARS
+) -> str:
+    if len(text) <= max_chars:
+        return text
 
-    history_text = history_to_text(old_turns)
-
-    new_summary = summarize_history(
-        state.task_summary,
-        history_text
+    return (
+        "[OUTPUT TRUNCATED - showing tail]\n\n"
+        + text[-max_chars:]
     )
 
-    state.task_summary = new_summary
+#获取输入token
+def get_input_token_budget() -> int:
+    return (
+        MAX_CONTEXT_TOKENS 
+        - RESERVED_OUTPUT_TOKENS
+        - SAFETY_MARGIN_TOKENS
+    )
 
-    del history_turns[:compress_count]
+# token估算方法(Runtime 的保守预算估算器)
+def estimate_tokens(
+        text: str
+) -> int:
+    if not text:
+        return 0
+
+    return len(text)
+
+# 估算tools的token
+def estimate_tools_tokens() -> int:
+    tools_text = json.dumps(
+        TOOLS,
+        ensure_ascii=False,
+    )
+    return estimate_tokens(
+        tools_text
+    )
+
+# 估算固定Context成本
+def estimate_fixed_context_tokens(
+        task: str,
+        state: AgentState
+) -> int:
+    runtime_state = format_runtime_state(
+        state=state
+    )
+
+    summary = (
+        state.task_summary
+        or ""
+    )
+
+    total = 0
+    total += estimate_tokens(
+        SYSTEM_PROMPT
+    )
+
+    total += estimate_tokens(
+        task
+    )
+
+    total += estimate_tokens(
+        runtime_state
+    )
+
+    total += estimate_tokens(
+        summary
+    )
+
+    total += estimate_tools_tokens()
+
+    return total
+
+# 开始计算每个Turn的成本
+def estimate_turn_tokens(
+        turn: list
+) -> int:
+    text = turn_to_text(
+        turn
+    )
+    return estimate_tokens(
+        text
+    )
+
+# 按从最新到最后的turn计算token
+def select_recent_turns(
+        history_turns: list[list],
+        token_budget: int
+) -> list[list]:
+    selected_turns = []
+    used_tokens = 0
+    for turn in reversed(
+        history_turns
+    ):
+        turn_tokens = (
+            estimate_turn_tokens(
+                turn
+            )
+        )
+
+        if used_tokens + turn_tokens > token_budget:
+            break
+
+        selected_turns.append(
+            turn
+        )
+
+        used_tokens += (
+            turn_tokens
+        )
+
+    selected_turns.reverse()
+    return selected_turns
+
+# 计算Recent Context budget
+def get_recent_context_budget(
+        task: str,
+        state: AgentState
+) -> int:
+    input_budget = get_input_token_budget()
+    fixed_tokens = estimate_fixed_context_tokens(
+        task,
+        state,
+    )
+
+    remaining = (
+        input_budget
+        - fixed_tokens
+    )
+
+    return max(remaining, 0)
+
+def print_context_debug(
+    task: str,
+    state: AgentState,
+    history_turns: list[list],
+) -> None:
+    input_budget = (
+        get_input_token_budget()
+    )
+
+    fixed_tokens = (
+        estimate_fixed_context_tokens(
+            task,
+            state,
+        )
+    )
+
+    recent_budget = max(
+        input_budget - fixed_tokens,
+        0,
+    )
+
+    selected_turns = (
+        select_recent_turns(
+            history_turns,
+            recent_budget,
+        )
+    )
+
+    selected_tokens = sum(
+        estimate_turn_tokens(turn)
+        for turn in selected_turns
+    )
+
+    print(
+        "\n--- Context Budget ---"
+    )
+
+    print(
+        f"Max context: "
+        f"{MAX_CONTEXT_TOKENS}"
+    )
+
+    print(
+        f"Reserved output: "
+        f"{RESERVED_OUTPUT_TOKENS}"
+    )
+
+    print(
+        f"Safety margin: "
+        f"{SAFETY_MARGIN_TOKENS}"
+    )
+
+    print(
+        f"Input budget: "
+        f"{input_budget}"
+    )
+
+    print(
+        f"Fixed context: "
+        f"{fixed_tokens}"
+    )
+
+    print(
+        f"Recent budget: "
+        f"{recent_budget}"
+    )
+
+    print(
+        f"History turns stored: "
+        f"{len(history_turns)}"
+    )
+
+    print(
+        f"History turns selected: "
+        f"{len(selected_turns)}"
+    )
+
+    print(
+        f"Selected turn tokens: "
+        f"{selected_tokens}"
+    )
+
+# 是否是有效的预算
+def validate_context_budget(
+    task: str,
+    state: AgentState,
+) -> str | None:
+    input_budget = (
+        get_input_token_budget()
+    )
+
+    fixed_tokens = (
+        estimate_fixed_context_tokens(
+            task,
+            state,
+        )
+    )
+
+    if fixed_tokens > input_budget:
+        return (
+            "Fixed context exceeds "
+            "the available input budget."
+        )
+
+    return None
 
 # 运行agent
 def run_agent(task: str) -> str:
@@ -1050,11 +1576,32 @@ def run_agent(task: str) -> str:
             )
         model_turns += 1
         print(f"\n--- Agent turn {model_turns} ---")
+
+        budget_error = validate_context_budget(
+            task,
+            state
+        )
+
+        if budget_error:
+            return (
+                f"Agent stopped:"
+                f"{budget_error}"
+            )
+
         # 压缩上下文
         compress_history(
+            task=task,
             state=state,
-            history_turns=history_turns
+            history_turns=history_turns,
         )
+
+        print_context_debug(
+            task,
+            state,
+            history_turns
+        )
+
+        
         # -------------------------
         # 1. 构建有限长度 Context
         # -------------------------
