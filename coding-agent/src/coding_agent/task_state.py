@@ -37,7 +37,10 @@ class TodoItem:
 @dataclass
 class AgentState:
     todos: list[TodoItem] = field(default_factory=list)
-    evidence: set[EvidenceType] = field(default_factory=set)
+    workspace_revision: int = 0
+    evidence: dict[EvidenceType, int] = field(default_factory=dict)
+    task_summary: str = ""
+
 
 
 @dataclass
@@ -46,3 +49,9 @@ class CommandResult:
     stdout: str
     stderr: str
     returncode: int
+
+@dataclass
+class FileOperationResult:
+    success: bool
+    message: str
+    changed: bool = False

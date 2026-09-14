@@ -1,9 +1,10 @@
 import json
+from dataclasses import asdict
 from pathlib import Path
 from openai import OpenAI
 import subprocess
 from .permission import classify_command, Permission
-from .task_state import TaskStatus, TodoItem, AgentState, CompletionStatus, EvidenceType, CommandResult
+from .task_state import TaskStatus, TodoItem, AgentState, CompletionStatus, EvidenceType, CommandResult, FileOperationResult
 import shlex
 
 
@@ -16,8 +17,14 @@ WORKSPACE = Path.cwd().resolve()
 
 MODEL = "deepseek-v4-flash"
 
+# 最大模型循环次数
 MAX_MODEL_TURNS = 50
+# 最大工具调用次数
 MAX_TOOL_CALLS = 100
+# 最大上下文
+MAX_CONTEXT_TURNS = 8
+# 保持最近的turns
+KEEP_RECENT_TURNS = 6
 
 SYSTEM_PROMPT = """
 You are a coding agent working inside a software project.
@@ -90,7 +97,7 @@ TOOLS = [
     {
         "type": "function",
         "name": "list_files",
-        "description": "List files add directories inside a directory in the workspace.",
+        "description": "List files and directories inside a directory in the workspace.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -310,7 +317,7 @@ def resolve_path(path: str) -> Path:
 def list_files(path: str) -> str:
     target = resolve_path(path)
     if not target.exists():
-        return f"Directory does not exits: {path}"
+        return f"Directory does not exist: {path}"
 
     if not target.is_dir():
         return f"Path is not a directory: {path}"
@@ -330,7 +337,7 @@ def list_files(path: str) -> str:
 def read_file(path: str) -> str:
     target = resolve_path(path)
     if not target.exists():
-        return f"File does not exits: {path}"
+        return f"File does not exist: {path}"
     if not target.is_file():
         return f"Path is not a file: {path}"
 
@@ -342,38 +349,99 @@ def read_file(path: str) -> str:
     return content
 
 # 写入文件
-def write_file(path: str, content: str) -> str:
+def write_file(path: str, content: str) -> FileOperationResult:
     target = resolve_path(path)
     if not target.parent.exists():
-        return f"Parent directory does not exist: {target.parent}"
+        return FileOperationResult(
+            success=False,
+            changed=False,
+            message=(
+                f"Parent directory does not exist: {target.parent}"
+            )
+        )
 
     target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        old_content = target.read_text(
+            encoding="utf-8"
+        )
+        if old_content == content:
+            return FileOperationResult(
+                success=True,
+                changed=False,
+                message=(
+                    f"No changes needed: {path}"
+                )
+            )
     target.write_text(content, encoding="utf-8")
-    return f"Successfully wrote file: {path}"
+    return FileOperationResult(
+        success=True,
+        changed=True,
+        message=(
+            f"Successfully wrote file: {path}"
+        )
+    )
 
 # 写入text
-def replace_text(path: str, old_text: str, new_text: str) -> str:
+def replace_text(path: str, old_text: str, new_text: str) -> FileOperationResult:
     target = resolve_path(path)
     if not target.exists():
-        return f"File does not exist: {path}"
+        return FileOperationResult(
+            success=False,
+            changed=False,
+            message=(
+                f"File does not exist: {path}"
+            )
+        )
     if not target.is_file():
-        return f"Path is not a file: {path}"
+        return FileOperationResult(
+            success=False,
+            changed=False,
+            message=(
+                f"Path is not a file: {path}"
+            )
+        )
 
     content = target.read_text(encoding="utf-8")
     if old_text not in content:
-        return f"Text '{old_text}' not found in file: {path}"
+        return FileOperationResult(
+            success=False,
+            changed=False,
+            message=(
+                f"Text '{old_text}' not found in file: {path}"
+            )
+        )
 
     count = content.count(old_text)
     if count > 1:
-        return (
-            f"Old text appears {count} times. "
-            "Please provide more surrounding context "
-            "so the replacement is unambiguous."
+        return FileOperationResult(
+            success=False,
+            changed=False,
+            message=(
+                f"Old text appears {count} times. "
+                "Please provide more surrounding context "
+                "so the replacement is unambiguous."
+            )
         )
 
     updated_content = content.replace(old_text, new_text, 1)
+    if updated_content == content:
+        return FileOperationResult(
+            success=True,
+            changed=False,
+            message=(
+                f"No changes needed: {path}"
+            )
+        )
     target.write_text(updated_content, encoding="utf-8")
-    return f"Successfully replaced text in file: {path}"
+    return FileOperationResult(
+        success=True,
+        changed=True,
+        message=(
+            f"Successfully updated file: "
+            f"{path}"
+        )
+    )
 
 
 # 询问是不是要继续
@@ -509,7 +577,7 @@ def update_task(
 
         if (new_status == TaskStatus.COMPLETED):
             required = (todo.required_evidence)
-            if required is not None and required not in state.evidence:
+            if required is not None and not has_valid_evidence(state, required):
                 return (
                     f"Cannot complete task "
                     f"{task_id}.\n"
@@ -533,7 +601,7 @@ def update_task(
 # 给Agent一个 set_plan工具
 def set_plan(
         state: AgentState,
-        items: list[str]
+        items: list[dict]
 ) -> str:
     todos = []
     for index, item in enumerate(items, start=1):
@@ -569,47 +637,51 @@ def record_command_evidence(
         state: AgentState,
         result: CommandResult,
 ) -> None:
-    if result.returncode != 0:
-        return 
-
     try:
-        args = shlex.split(
-            result.command
-        )
+        args = shlex.split(result.command)
     except ValueError:
         return
 
-    if not args:
-        return 
+    evidence_type = None
+    if args[:1] == ["pytest"] or args[:3] == ["uv", "run", "pytest"]:
+        evidence_type = EvidenceType.TESTS_PASSED
+    elif args[:2] == ["git", "diff"]:
+        evidence_type = EvidenceType.DIFF_INSPECTED
 
-    if args[0] == "pytest":
-        state.evidence.add(
-            EvidenceType.TESTS_PASSED
-        )
-        return 
+    if evidence_type is not None:
+        if result.returncode == 0:
+            state.evidence[evidence_type] = state.workspace_revision
+        else:
+            state.evidence.pop(evidence_type, None)
 
-    # uv run pytest
-    if (
-        len(args) >= 3
-        and args[0] == "uv"
-        and args[1] == "run"
-        and args[2] == "pytest"
-    ):
-        state.evidence.add(
-            EvidenceType.TESTS_PASSED
-        )
-        return 
+# 让evidence失效
+def invalidate_evidence(
+        state: AgentState,
+) -> None:
+    state.evidence.clear()
 
-    # git diff
-    if (
-        len(args) > 2
-        and args[0] == "git"
-        and args[1] == "diff"
-    ):
-        state.evidence.add(
-            EvidenceType.DIFF_INSPECTED
-        )
+# 改变workspace_revision
+def mark_workspace_changed(
+        state: AgentState
+) -> None:
+    state.workspace_revision += 1
+    invalidate_evidence(state)
+    get_unfinished_tasks(state)
 
+# 判断Evidence是否有效
+def has_valid_evidence(
+        state: AgentState,
+        evidence_type: EvidenceType
+) -> bool:
+    evidence_revision = state.evidence.get(
+        evidence_type
+    )
+
+    if evidence_revision is None:
+        return False
+    return (
+        evidence_revision == state.workspace_revision
+    )
 
 # 调用工具
 def execute_tool(
@@ -649,23 +721,21 @@ def execute_tool(
         elif name == "read_file":
             return read_file(**arguments)
         elif name == "write_file":
-            return write_file(**arguments)
+            result = write_file(**arguments)
+            if result.changed:
+                mark_workspace_changed(state)
+
+            return json.dumps(asdict(result), ensure_ascii=False)
         elif name == "replace_text":
-            return replace_text(**arguments)
+            result = replace_text(**arguments)
+            if result.changed:
+                mark_workspace_changed(state)
+            return json.dumps(asdict(result), ensure_ascii=False)
         elif name == "run_command":
             result = run_command(**arguments)
-            if isinstance(
-                result,
-                CommandResult,
-            ):
-                record_command_evidence(
-                    state=state,
-                    result=result
-                )
-
-                return format_command_result(
-                    result=result
-                )
+            if isinstance(result, CommandResult):
+                record_command_evidence(state=state, result=result)
+                return format_command_result(result=result)
             return result
         else:
             return f"Unknown tool: {name}"
@@ -676,6 +746,11 @@ def execute_tool(
 def get_unfinished_tasks(
         state: AgentState,
 ) -> list[TodoItem]:
+    for todo in state.todos:
+        if (todo.status == TaskStatus.COMPLETED
+                and todo.required_evidence is not None
+                and not has_valid_evidence(state, todo.required_evidence)):
+            todo.status = TaskStatus.PENDING
     return [
         todo 
         for todo in state.todos
@@ -695,6 +770,7 @@ def has_blocked_tasks(
     )
 
 def is_task_complete(state: AgentState) -> bool:
+    get_unfinished_tasks(state)
     if not state.todos:
         return True
 
@@ -718,18 +794,250 @@ def get_completion_status(
 
     return CompletionStatus.COMPLETE
 
+# 打印出workspacerevision状态
+def print_state_debug(
+    state: AgentState,
+) -> None:
+    print("\n--- Runtime State ---")
 
+    print(
+        "Workspace revision:",
+        state.workspace_revision,
+    )
 
-# 运行agent
-def run_agent(task: str) -> str:
-    state = AgentState()
-    allow_blocked_final = False
+    print("Evidence:")
+
+    if not state.evidence:
+        print("  (none)")
+        return
+
+    for evidence_type, revision in (
+        state.evidence.items()
+    ):
+        valid = (
+            revision
+            == state.workspace_revision
+        )
+
+        print(
+            f"  {evidence_type.value}: "
+            f"revision={revision}, "
+            f"valid={valid}"
+        )
+
+def build_model_input(
+        task: str,
+        history_turns: list[list],
+        state: AgentState
+) -> list:
+    """
+    构建当前模型的上下文
+    """
     input_items = [
         {
             "role": "user",
             "content": task,
         }
     ]
+
+    if state.task_summary:
+        input_items.append(
+            {
+                "role": "user",
+                "content": (
+                    "TASK MEMORY SUMMARY: \n"
+                    f"{state.task_summary}"
+                )
+            }
+        )
+
+    for turn in history_turns:
+        input_items.extend(turn)
+
+    return input_items
+
+# 格式化runtime的state
+def format_runtime_state(
+        state: AgentState
+) -> str:
+    lines = []
+    lines.append(
+        f"Workspace revision:"
+        f"{state.workspace_revision}"
+    )
+    lines.append("")
+    lines.append("Current plan:")
+    lines.append(
+        format_plan(state)
+    )
+    lines.append("")
+    lines.append("Evidence:")
+
+    if not state.evidence:
+        lines.append("(none)")
+    else:
+        for evidence_type, revision in state.evidence.items():
+            valid = (
+                revision == state.workspace_revision
+            )
+            lines.append(
+                f"- {evidence_type.value}: "
+                f"revision={revision}, "
+                f"valid={valid}"
+            )
+
+    return "\n".join(lines)
+
+# 将turn转成str
+def turn_to_text(
+        turn: list
+) -> str:
+    lines = []
+    for item in turn:
+        if isinstance(item, dict):
+            item_type = item.get("type")
+            if item_type == "function_call_output":
+                lines.append(
+                    "TOOL RESULT:\n"
+                    f"{item.get('output','')}"
+                )
+            elif item.get("role") == "user":
+                lines.append(
+                    "RUNTIME FEEDBACK:\n"
+                    f"{item.get('content','')}"
+                )
+            continue
+
+        item_type = getattr(
+            item, 
+            "type",
+            None,
+        )
+
+        if item_type == "function_call":
+            lines.append(
+                "TOOL CALL:\n"
+                f"{item.name}"
+                f"({item.arguments})"
+            )
+        elif item_type == "message":
+            text_parts = []
+            for content in item.content:
+                text = getattr(
+                    content,
+                    "text",
+                    None,
+                )
+
+                if text:
+                    text_parts.append(text)
+
+            if text_parts:
+                lines.append(
+                    "ASSISTANT:\n"
+                    + "\n".join(text_parts)
+                )
+
+    return "\n\n".join(lines)
+
+# 把多个turn拼起来
+def history_to_text(
+        turns: list[list]
+) -> str:
+    parts = []
+    for index, turn in enumerate(turns, start=1):
+        text = turn_to_text(turn)
+        parts.append(
+            f"---Old Turn {index} ---\n"
+            f"{text}"
+        )
+
+    return "\n\n".join(parts)
+
+# 总结历史总结
+def summarize_history(
+        old_summary: str,
+        history_text: str,
+) -> str:
+    prompt = f"""
+    You are maintaining working memory for a coding agent.
+
+    Compress the following old conversation/tool history into
+    a concise task summary.
+
+    Keep only information that may matter later, such as:
+
+    - important findings
+    - confirmed bug causes
+    - user requirements and constraints
+    - design decisions
+    - files or components already changed
+    - important failures or unresolved issues
+
+    Do NOT include:
+
+    - routine tool calls
+    - verbose command output
+    - details that are no longer useful
+
+    Existing summary:
+
+    {old_summary or "(none)"}
+
+    New history to compress:
+
+    {history_text}
+
+    Return only the updated concise summary.
+    """
+
+    response = client.responses.create(
+        model=MODEL,
+        input=prompt,
+    )
+
+    return response.output_text.strip()
+
+def compress_history(
+        state: AgentState, 
+        history_turns: list[list]
+) -> None:
+    if (len(history_turns) <= MAX_CONTEXT_TURNS):
+        return 
+
+    compress_count = (
+        len(history_turns) - KEEP_RECENT_TURNS
+    )
+
+    old_turns = history_turns[:compress_count]
+
+    history_text = history_to_text(old_turns)
+
+    new_summary = summarize_history(
+        state.task_summary,
+        history_text
+    )
+
+    state.task_summary = new_summary
+
+    del history_turns[:compress_count]
+
+# 运行agent
+def run_agent(task: str) -> str:
+    state = AgentState()
+    allow_blocked_final = False
+    # input_items = [
+    #     {
+    #         "role": "user",
+    #         "content": task,
+    #     }
+    # ]
+    history_turns: list[list] = []
+    #-----记忆系统
+    # 上下文Context = Recent Turns + Runtime state + Task Summary
+    # Recent Turns: 最近几轮具体发生了什么
+    # Runtime state: 当前做到哪、Evidence、Revision
+    # Task Summary: 过去留下来的结论
 
     model_turns = 0
     tool_call_count = 0
@@ -741,19 +1049,59 @@ def run_agent(task: str) -> str:
                 "maxinum model turns reached."
             )
         model_turns += 1
-        print(f"\n--- Agent step {model_turns} ---")
+        print(f"\n--- Agent turn {model_turns} ---")
+        # 压缩上下文
+        compress_history(
+            state=state,
+            history_turns=history_turns
+        )
+        # -------------------------
+        # 1. 构建有限长度 Context
+        # -------------------------
+        model_input = build_model_input(
+            task=task, 
+            history_turns=history_turns,
+            state=state
+        )
+
+        # 每次调用模型时，动态生成最新的RuntimeState
+        # -------------------------
+        # 2. 注入最新 Runtime State
+        # -------------------------
+        runtime_instructions = (
+            SYSTEM_PROMPT
+            + "\n\n"
+            + "CURRENT RUNTIME STATE:\n"
+            + format_runtime_state(state)
+        )
+
         response = client.responses.create(
             model=MODEL,
-            instructions=SYSTEM_PROMPT,
-            input=input_items,
-            tools=TOOLS,
+            instructions=runtime_instructions,
+            input=model_input,
+            tools = TOOLS,
         )
+        # response = client.responses.create(
+        #     model=MODEL,
+        #     instructions=SYSTEM_PROMPT,
+        #     input=input_items,
+        #     tools=TOOLS,
+        # )
 
         # 模型产出的内容必须保留下来
         # 下一轮 Agent 需要知道之前自己做了什么
-        input_items.extend(response.output)
-        model_output = json.loads(response.output_text)
-        print(f"Model output:\n{model_output}\n")
+        # input_items.extend(response.output)
+        # 本轮所有内容先放这里
+        turn_items = list(
+            response.output
+        )
+        print(
+            json.dumps(
+                [item.model_dump(mode="json") for item in response.output],
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
 
         tool_calls = [
             item
@@ -762,6 +1110,10 @@ def run_agent(task: str) -> str:
         ]
 
         # 判断任务都完成了才结束
+        # -------------------------
+        # 4. 模型想结束
+        # -------------------------
+
         if not tool_calls:
             completion_status = get_completion_status(
                 state=state
@@ -774,39 +1126,55 @@ def run_agent(task: str) -> str:
                 return response.output_text
 
             if completion_status == CompletionStatus.INCOMPLETE:
-                input_items.append(
-                    {
-                        "role": "user",
-                        "content": (
-                            "You attempted to finish, "
-                            "but the task plan is "
-                            "not complete.\n\n"
-                            f"{format_plan(state)}\n\n"
-                            "Continue working on "
-                            "the unfinished tasks."
-                        )
-                    }
-                )
+                runtime_feedback = {
+                    "role": "user",
+                    "content": (
+                        "You attempted to finish, "
+                        "but the task plan is "
+                        "not complete.\n\n"
+                        f"{format_plan(state)}\n\n"
+                        "Continue working on "
+                        "the unfinished tasks."
+                    )
+                }
+
+                turn_items.append(runtime_feedback)
+                history_turns.append(turn_items)
+                
                 continue
 
             if completion_status == CompletionStatus.BLOCKED:
                 allow_blocked_final = True
-                input_items.append(
-                    {
-                        "role": "user",
-                        "content": (
-                            "Some tasks are blocked.\n\n"
-                            f"{format_plan(state)}\n\n"
-                            "Provide a final answer "
-                            "explaining completed work "
-                            "and blocked tasks."
-                        ),
-                    }
+                runtime_feedback = {
+                    "role": "user",
+                    "content": (
+                        "Some tasks are blocked.\n\n"
+                        f"{format_plan(state)}\n\n"
+                        "Provide a final answer "
+                        "explaining completed work "
+                        "and blocked tasks."
+                    ),
+                }
+
+                turn_items.append(
+                    runtime_feedback
                 )
+                history_turns.append(
+                    turn_items
+                )
+                
                 continue
 
         for call in tool_calls:
+
+            print_state_debug(state)
+
             tool_call_count += 1
+            if tool_call_count > MAX_TOOL_CALLS:
+                return (
+                    "Agent stopped:"
+                    "maximum tool calls reached"
+                )
             arguments = json.loads(call.arguments)
 
             print(f"Tool call: {call.name}")
@@ -820,14 +1188,21 @@ def run_agent(task: str) -> str:
 
             print(f"Tool result: {result}")
 
-            input_items.append(
-                {
-                    "type": "function_call_output",
-                    "call_id": call.call_id,
-                    "output": result,
-                }
-
+            tool_output = {
+                "type": "function_call_output",
+                "call_id": call.call_id,
+                "output": result,
+            }
+            turn_items.append(
+                tool_output
             )
+        # -------------------------
+        # 6. 保存完整的这一轮
+        # -------------------------
+
+        history_turns.append(
+            turn_items
+        )
 
 
 def read_task() -> str:
