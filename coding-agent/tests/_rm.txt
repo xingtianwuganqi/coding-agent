@@ -1,0 +1,323 @@
+### <module> argcount=0 varnames=()
+  CONSTS: ('One-off migration helper for splitting ``coding_agent.main`` into modules.\n\nThis module is a temporary refactoring tool.  It copies the existing\n``src/coding_agent/main.py`` content line-for-line (line ranges are located\nthrough ``ast``) into a layered module layout and proves with ``ast`` that\nevery function and every module-level constant stays unchanged.  After the\nfiles have been written it removes itself from the repository.\n', 0, ('annotations',), None, ('Path',), 1, 'src', 'coding_agent', 'main.py', 9, 'client', 'config.py', 'WORKSPACE', 'MODEL', 'MAX_MODEL_TURNS', 'MAX_TOOL_CALLS', 'MAX_CONTEXT_TURNS', 'KEEP_RECENT_TURNS', 'MAX_CONTEXT_TOKENS', 'RESERVED_OUTPUT_TOKENS', 'SAFETY_MARGIN_TOKENS', 'MAX_TOOL_OUTPUT_CHARS', 'DEFAULT_READ_LINES', 'MAX_READ_LINES', 'MAX_SEARCH_RESULTS', 'MAX_SUMMARY_CHARS', 'SYSTEM_PROMPT', 'BLOCKED_COMMANDS', 'TOOLS', 'tools/schemas.py', 'TOOL_PERMISSIONS', 'resolve_path', 'tools/filesystem.py', 'list_files', 'read_file', 'search_text', 'write_file', 'replace_text', 'ask_for_confirmation', 'tools/commands.py', 'run_command', 'format_command_result', 'execute_tool', 'tools/executor.py', 'format_plan', 'planning.py', 'update_task', 'set_plan', 'get_plan', 'record_command_evidence', 'invalidate_evidence', 'mark_workspace_changed', 'has_valid_evidence', 'get_unfinished_tasks', 'has_blocked_tasks', 'is_task_complete', 'get_completion_status', 'build_model_input', 'context.py', 'format_runtime_state', 'turn_to_text', 'history_to_text', 'summarize_history', 'compress_history', 'truncate_text', 'truncate_tail', 'get_input_token_budget', 'estimate_tokens', 'agent.py', 'cli.py', ('estimate_tools_tokens', 'estimate_fixed_context_tokens', 'estimate_turn_tokens', 'select_recent_turns', 'get_recent_context_budget', 'print_fixed_context_breakdown', 'print_context_debug', 'validate_context_budget', 'print_state_debug', 'run_agent', 'read_task', 'main'), 'permission.py', 'task_state.py', ('Permission', 'classify_command', 'AgentState', 'CommandResult', 'CompletionStatus', 'EvidenceType', 'FileOperationResult', 'TaskStatus', 'TodoItem'), 'from dataclasses import asdict', 'import json', 'from openai import OpenAI', 'from pathlib import Path', 'import shlex', 'import subprocess', ('asdict', 'json', 'OpenAI', 'Path', 'shlex', 'subprocess'), 'Configuration, shared constants and the model client.', 'Todo plan, evidence tracking and completion status.', 'Context building, history summarization and token budgeting.', 'Agent runtime loop (model calls, tool calls, completion).', 'Interactive command line interface.', 'Tool schemas exposed to the model and their permission levels.', 'Filesystem tools restricted to the workspace.', 'Command execution, user confirmation and result formatting.', 'Executes a single tool call requested by the model.', ('config.py', 'planning.py', 'context.py', 'agent.py', 'cli.py', 'tools/schemas.py', 'tools/filesystem.py', 'tools/commands.py', 'tools/executor.py'), '"""Tool layer: schemas, filesystem tools, command tools, executor."""\n', '"""Entry point for the ``coding-agent`` command line application."""\n\nfrom .cli import main\n\n__all__ = ["main"]\n', False, <code object _definitions at 0x1089e8b10, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 137>, <code object _bound_names at 0xb599e9c00, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 150>, <code object _free_names at 0x108a2c030, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 169>, <code object _leading_comment_start at 0x108a341e0, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 178>, <code object _render_imports at 0xb599a6800, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 187>, <code object _collect_segments at 0xb599a5e00, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 217>, <code object _build_contents at 0xb599edb00, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 251>, <code object _verify at 0xb59041800, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 280>, <code object test_split_main_into_modules at 0xb599f4000, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 313>, <code object test_remove_migration_helper at 0x1089d8bb0, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 342>)
+  1: LOAD_CONST 'One-off migration helper for splitting ``coding_agent.main`` into modules.\n\nThis module is a temporary refactoring tool.  It copies the existing\n``src/coding_agent/main.py`` content line-for-line (line ranges are located\nthrough ``ast``) into a layered module layout and proves with ``ast`` that\nevery function and every module-level constant stays unchanged.  After the\nfiles have been written it removes itself from the repository.\n' | STORE_NAME __doc__
+  10: LOAD_CONST 0 | LOAD_CONST ('annotations',) | IMPORT_NAME __future__ | IMPORT_FROM annotations | STORE_NAME annotations | POP_TOP
+  12: LOAD_CONST 0 | LOAD_CONST None | IMPORT_NAME builtins | LOAD_CONST 0 | LOAD_CONST None | IMPORT_NAME _pytest.assertion.rewrite | IMPORT_FROM assertion | POP_TOP | IMPORT_FROM rewrite | POP_TOP | LOAD_CONST 0 | LOAD_CONST None | IMPORT_NAME ast | STORE_NAME ast
+  13: LOAD_CONST 0 | LOAD_CONST None | IMPORT_NAME builtins | STORE_NAME builtins
+  14: LOAD_CONST 0 | LOAD_CONST ('Path',) | IMPORT_NAME pathlib | IMPORT_FROM Path | STORE_NAME Path | POP_TOP
+  16: PUSH_NULL | LOAD_NAME Path | LOAD_NAME __file__ | PRECALL | CALL | LOAD_METHOD resolve | PRECALL | CALL | LOAD_ATTR parents | LOAD_CONST 1 | BINARY_SUBSCR | LOAD_CONST 'src' | BINARY_OP / | LOAD_CONST 'coding_agent' | BINARY_OP / | STORE_NAME PACKAGE_DIR
+  17: LOAD_NAME PACKAGE_DIR | LOAD_CONST 'main.py' | BINARY_OP / | STORE_NAME ORIGINAL_MAIN
+  18: LOAD_CONST 9 | STORE_NAME IMPORT_LINES
+  20: BUILD_MAP | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | BUILD_MAP | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | DICT_UPDATE | BUILD_MAP | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | MAP_ADD | DICT_UPDATE | LOAD_CONST ('estimate_tools_tokens', 'estimate_fixed_context_tokens', 'estimate_turn_tokens', 'select_recent_turns', 'get_recent_context_budget', 'print_fixed_context_breakdown', 'print_context_debug', 'validate_context_budget', 'print_state_debug', 'run_agent', 'read_task', 'main') | BUILD_CONST_KEY_MAP | DICT_UPDATE | STORE_NAME TARGETS
+  22: LOAD_CONST 'client' | LOAD_CONST 'config.py'
+  23: LOAD_CONST 'WORKSPACE' | LOAD_CONST 'config.py'
+  24: LOAD_CONST 'MODEL' | LOAD_CONST 'config.py'
+  25: LOAD_CONST 'MAX_MODEL_TURNS' | LOAD_CONST 'config.py'
+  26: LOAD_CONST 'MAX_TOOL_CALLS' | LOAD_CONST 'config.py'
+  27: LOAD_CONST 'MAX_CONTEXT_TURNS' | LOAD_CONST 'config.py'
+  28: LOAD_CONST 'KEEP_RECENT_TURNS' | LOAD_CONST 'config.py'
+  29: LOAD_CONST 'MAX_CONTEXT_TOKENS' | LOAD_CONST 'config.py'
+  30: LOAD_CONST 'RESERVED_OUTPUT_TOKENS' | LOAD_CONST 'config.py'
+  31: LOAD_CONST 'SAFETY_MARGIN_TOKENS' | LOAD_CONST 'config.py'
+  32: LOAD_CONST 'MAX_TOOL_OUTPUT_CHARS' | LOAD_CONST 'config.py'
+  33: LOAD_CONST 'DEFAULT_READ_LINES' | LOAD_CONST 'config.py'
+  34: LOAD_CONST 'MAX_READ_LINES' | LOAD_CONST 'config.py'
+  35: LOAD_CONST 'MAX_SEARCH_RESULTS' | LOAD_CONST 'config.py'
+  36: LOAD_CONST 'MAX_SUMMARY_CHARS' | LOAD_CONST 'config.py'
+  37: LOAD_CONST 'SYSTEM_PROMPT' | LOAD_CONST 'config.py'
+  38: LOAD_CONST 'BLOCKED_COMMANDS' | LOAD_CONST 'config.py'
+  40: LOAD_CONST 'TOOLS' | LOAD_CONST 'tools/schemas.py'
+  41: LOAD_CONST 'TOOL_PERMISSIONS' | LOAD_CONST 'tools/schemas.py'
+  43: LOAD_CONST 'resolve_path' | LOAD_CONST 'tools/filesystem.py'
+  44: LOAD_CONST 'list_files' | LOAD_CONST 'tools/filesystem.py'
+  45: LOAD_CONST 'read_file' | LOAD_CONST 'tools/filesystem.py'
+  46: LOAD_CONST 'search_text' | LOAD_CONST 'tools/filesystem.py'
+  47: LOAD_CONST 'write_file' | LOAD_CONST 'tools/filesystem.py'
+  48: LOAD_CONST 'replace_text' | LOAD_CONST 'tools/filesystem.py'
+  49: LOAD_CONST 'ask_for_confirmation' | LOAD_CONST 'tools/commands.py'
+  50: LOAD_CONST 'run_command' | LOAD_CONST 'tools/commands.py'
+  51: LOAD_CONST 'format_command_result' | LOAD_CONST 'tools/commands.py'
+  52: LOAD_CONST 'execute_tool' | LOAD_CONST 'tools/executor.py'
+  54: LOAD_CONST 'format_plan' | LOAD_CONST 'planning.py'
+  55: LOAD_CONST 'update_task' | LOAD_CONST 'planning.py'
+  56: LOAD_CONST 'set_plan' | LOAD_CONST 'planning.py'
+  57: LOAD_CONST 'get_plan' | LOAD_CONST 'planning.py'
+  58: LOAD_CONST 'record_command_evidence' | LOAD_CONST 'planning.py'
+  59: LOAD_CONST 'invalidate_evidence' | LOAD_CONST 'planning.py'
+  60: LOAD_CONST 'mark_workspace_changed' | LOAD_CONST 'planning.py'
+  61: LOAD_CONST 'has_valid_evidence' | LOAD_CONST 'planning.py'
+  62: LOAD_CONST 'get_unfinished_tasks' | LOAD_CONST 'planning.py'
+  63: LOAD_CONST 'has_blocked_tasks' | LOAD_CONST 'planning.py'
+  64: LOAD_CONST 'is_task_complete' | LOAD_CONST 'planning.py'
+  65: LOAD_CONST 'get_completion_status' | LOAD_CONST 'planning.py'
+  67: LOAD_CONST 'build_model_input' | LOAD_CONST 'context.py'
+  68: LOAD_CONST 'format_runtime_state' | LOAD_CONST 'context.py'
+  69: LOAD_CONST 'turn_to_text' | LOAD_CONST 'context.py'
+  70: LOAD_CONST 'history_to_text' | LOAD_CONST 'context.py'
+  71: LOAD_CONST 'summarize_history' | LOAD_CONST 'context.py'
+  72: LOAD_CONST 'compress_history' | LOAD_CONST 'context.py'
+  73: LOAD_CONST 'truncate_text' | LOAD_CONST 'context.py'
+  74: LOAD_CONST 'truncate_tail' | LOAD_CONST 'context.py'
+  75: LOAD_CONST 'get_input_token_budget' | LOAD_CONST 'context.py'
+  76: LOAD_CONST 'estimate_tokens' | LOAD_CONST 'context.py'
+  77: LOAD_CONST 'context.py'
+  78: LOAD_CONST 'context.py'
+  79: LOAD_CONST 'context.py'
+  80: LOAD_CONST 'context.py'
+  81: LOAD_CONST 'context.py'
+  82: LOAD_CONST 'context.py'
+  83: LOAD_CONST 'context.py'
+  84: LOAD_CONST 'context.py'
+  86: LOAD_CONST 'agent.py'
+  87: LOAD_CONST 'agent.py'
+  88: LOAD_CONST 'cli.py'
+  89: LOAD_CONST 'cli.py'
+  92: LOAD_CONST ('Permission', 'classify_command', 'AgentState', 'CommandResult', 'CompletionStatus', 'EvidenceType', 'FileOperationResult', 'TaskStatus', 'TodoItem') | BUILD_CONST_KEY_MAP | STORE_NAME EXTERNAL_SOURCES
+  93: LOAD_CONST 'permission.py'
+  94: LOAD_CONST 'permission.py'
+  95: LOAD_CONST 'task_state.py'
+  96: LOAD_CONST 'task_state.py'
+  97: LOAD_CONST 'task_state.py'
+  98: LOAD_CONST 'task_state.py'
+  99: LOAD_CONST 'task_state.py'
+  100: LOAD_CONST 'task_state.py'
+  101: LOAD_CONST 'task_state.py'
+  104: LOAD_CONST ('asdict', 'json', 'OpenAI', 'Path', 'shlex', 'subprocess') | BUILD_CONST_KEY_MAP | STORE_NAME STDLIB_IMPORTS
+  105: LOAD_CONST 'from dataclasses import asdict'
+  106: LOAD_CONST 'import json'
+  107: LOAD_CONST 'from openai import OpenAI'
+  108: LOAD_CONST 'from pathlib import Path'
+  109: LOAD_CONST 'import shlex'
+  110: LOAD_CONST 'import subprocess'
+  113: LOAD_CONST ('config.py', 'planning.py', 'context.py', 'agent.py', 'cli.py', 'tools/schemas.py', 'tools/filesystem.py', 'tools/commands.py', 'tools/executor.py') | BUILD_CONST_KEY_MAP | STORE_NAME DOCSTRINGS
+  114: LOAD_CONST 'Configuration, shared constants and the model client.'
+  115: LOAD_CONST 'Todo plan, evidence tracking and completion status.'
+  116: LOAD_CONST 'Context building, history summarization and token budgeting.'
+  117: LOAD_CONST 'Agent runtime loop (model calls, tool calls, completion).'
+  118: LOAD_CONST 'Interactive command line interface.'
+  119: LOAD_CONST 'Tool schemas exposed to the model and their permission levels.'
+  120: LOAD_CONST 'Filesystem tools restricted to the workspace.'
+  121: LOAD_CONST 'Command execution, user confirmation and result formatting.'
+  122: LOAD_CONST 'Executes a single tool call requested by the model.'
+  125: LOAD_CONST '"""Tool layer: schemas, filesystem tools, command tools, executor."""\n' | STORE_NAME TOOLS_INIT
+  127: LOAD_CONST '"""Entry point for the ``coding-agent`` command line application."""\n\nfrom .cli import main\n\n__all__ = ["main"]\n' | STORE_NAME MAIN_SHIM
+  134: LOAD_CONST False | STORE_GLOBAL _generated
+  137: LOAD_CONST <code object _definitions at 0x1089e8b10, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 137> | MAKE_FUNCTION | STORE_NAME _definitions
+  150: LOAD_CONST <code object _bound_names at 0xb599e9c00, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 150> | MAKE_FUNCTION | STORE_NAME _bound_names
+  169: LOAD_CONST <code object _free_names at 0x108a2c030, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 169> | MAKE_FUNCTION | STORE_NAME _free_names
+  178: LOAD_CONST <code object _leading_comment_start at 0x108a341e0, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 178> | MAKE_FUNCTION | STORE_NAME _leading_comment_start
+  187: LOAD_CONST <code object _render_imports at 0xb599a6800, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 187> | MAKE_FUNCTION | STORE_NAME _render_imports
+  217: LOAD_CONST <code object _collect_segments at 0xb599a5e00, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 217> | MAKE_FUNCTION | STORE_NAME _collect_segments
+  251: LOAD_CONST <code object _build_contents at 0xb599edb00, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 251> | MAKE_FUNCTION | STORE_NAME _build_contents
+  280: LOAD_CONST <code object _verify at 0xb59041800, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 280> | MAKE_FUNCTION | STORE_NAME _verify
+  313: LOAD_CONST <code object test_split_main_into_modules at 0xb599f4000, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 313> | MAKE_FUNCTION | STORE_NAME test_split_main_into_modules
+  342: LOAD_CONST <code object test_remove_migration_helper at 0x1089d8bb0, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 342> | MAKE_FUNCTION | STORE_NAME test_remove_migration_helper | LOAD_CONST None | RETURN_VALUE
+
+### _definitions argcount=1 varnames=('tree', 'funcs', 'assigns', 'node', 'target')
+  CONSTS: (None,)
+  138: BUILD_MAP | STORE_FAST funcs
+  139: BUILD_MAP | STORE_FAST assigns
+  140: LOAD_FAST tree | LOAD_ATTR body | GET_ITER | FOR_ITER to 272 | STORE_FAST node
+  141: LOAD_GLOBAL NULL + isinstance | LOAD_FAST node | LOAD_GLOBAL ast | LOAD_ATTR FunctionDef | LOAD_GLOBAL ast | LOAD_ATTR AsyncFunctionDef | BUILD_TUPLE | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 126
+  142: LOAD_FAST node | LOAD_FAST funcs | LOAD_FAST node | LOAD_ATTR name | STORE_SUBSCR | JUMP_BACKWARD to 24
+  143: LOAD_GLOBAL NULL + isinstance | LOAD_FAST node | LOAD_GLOBAL ast | LOAD_ATTR Assign | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 270
+  144: LOAD_FAST node | LOAD_ATTR targets | GET_ITER | FOR_ITER to 270 | STORE_FAST target
+  145: LOAD_GLOBAL NULL + isinstance | LOAD_FAST target | LOAD_GLOBAL ast | LOAD_ATTR Name | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 268
+  146: LOAD_FAST node | LOAD_FAST assigns | LOAD_FAST target | LOAD_ATTR id | STORE_SUBSCR
+  147: LOAD_FAST funcs | LOAD_FAST assigns | BUILD_TUPLE | RETURN_VALUE
+  None: JUMP_BACKWARD to 192 | JUMP_BACKWARD to 24
+
+### _bound_names argcount=1 varnames=('node', 'bound', 'child', 'alias')
+  CONSTS: (None, '.', 0)
+  151: LOAD_GLOBAL NULL + set | PRECALL | CALL | STORE_FAST bound
+  152: LOAD_GLOBAL NULL + ast | LOAD_ATTR walk | LOAD_FAST node | PRECALL | CALL | GET_ITER | FOR_ITER to 820 | STORE_FAST child
+  153: LOAD_GLOBAL NULL + isinstance | LOAD_FAST child | LOAD_GLOBAL ast | LOAD_ATTR arg | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 182
+  154: LOAD_FAST bound | LOAD_METHOD add | LOAD_FAST child | LOAD_ATTR arg | PRECALL | CALL | POP_TOP | JUMP_BACKWARD to 70
+  155: LOAD_GLOBAL NULL + isinstance | LOAD_FAST child | LOAD_GLOBAL ast | LOAD_ATTR Name | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 374 | LOAD_GLOBAL NULL + isinstance | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 374
+  156: LOAD_FAST child | LOAD_ATTR ctx | LOAD_GLOBAL ast | LOAD_ATTR Store | LOAD_GLOBAL ast | LOAD_ATTR Del | BUILD_TUPLE
+  158: LOAD_FAST bound | LOAD_METHOD add | LOAD_FAST child | LOAD_ATTR id | PRECALL | CALL | POP_TOP | JUMP_BACKWARD to 70
+  159: LOAD_GLOBAL NULL + isinstance | LOAD_FAST child | LOAD_GLOBAL ast | LOAD_ATTR Import | LOAD_GLOBAL ast | LOAD_ATTR ImportFrom | BUILD_TUPLE | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 590
+  160: LOAD_FAST child | LOAD_ATTR names | GET_ITER | FOR_ITER to 586 | STORE_FAST alias | JUMP_BACKWARD to 70
+  161: LOAD_FAST bound | LOAD_METHOD add | LOAD_FAST alias | LOAD_ATTR asname | JUMP_IF_TRUE_OR_POP to 568 | LOAD_FAST alias | LOAD_ATTR name | LOAD_METHOD split | LOAD_CONST '.' | PRECALL | CALL | LOAD_CONST 0 | BINARY_SUBSCR | PRECALL | CALL | POP_TOP | JUMP_BACKWARD to 464
+  162: LOAD_GLOBAL NULL + isinstance | LOAD_FAST child | LOAD_GLOBAL ast | LOAD_ATTR ExceptHandler | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 712 | LOAD_FAST child | LOAD_ATTR name | POP_JUMP_FORWARD_IF_FALSE to 712
+  163: LOAD_FAST bound | LOAD_METHOD add | LOAD_FAST child | LOAD_ATTR name | PRECALL | CALL | POP_TOP | JUMP_BACKWARD to 70
+  164: LOAD_GLOBAL NULL + isinstance | LOAD_FAST child | LOAD_GLOBAL ast | LOAD_ATTR Global | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 816
+  165: LOAD_FAST bound | LOAD_METHOD update | LOAD_FAST child | LOAD_ATTR names | PRECALL | CALL | POP_TOP
+  166: LOAD_FAST bound | RETURN_VALUE
+  None: JUMP_BACKWARD to 70
+
+### _free_names argcount=1 varnames=('node', 'used')
+  CONSTS: (None, <code object <setcomp> at 0x1085182d0, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 170>)
+  170: LOAD_CONST <code object <setcomp> at 0x1085182d0, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 170> | MAKE_FUNCTION | GET_ITER | PRECALL | CALL | STORE_FAST used
+  172: LOAD_GLOBAL NULL + ast | LOAD_ATTR walk | LOAD_FAST node | PRECALL | CALL
+  175: LOAD_FAST used | LOAD_GLOBAL NULL + _bound_names | LOAD_FAST node | PRECALL | CALL | BINARY_OP - | LOAD_GLOBAL NULL + set | LOAD_GLOBAL NULL + dir | LOAD_GLOBAL builtins | PRECALL | CALL | PRECALL | CALL | BINARY_OP - | RETURN_VALUE
+
+### <setcomp> argcount=1 varnames=('.0', 'child')
+  CONSTS: ()
+  170: BUILD_SET | LOAD_FAST .0 | FOR_ITER to 140 | POP_JUMP_BACKWARD_IF_FALSE to 6 | POP_JUMP_BACKWARD_IF_FALSE to 6 | SET_ADD | JUMP_BACKWARD to 6 | RETURN_VALUE
+  171: LOAD_FAST child | LOAD_ATTR id
+  172: STORE_FAST child
+  173: LOAD_GLOBAL NULL + isinstance | LOAD_FAST child | LOAD_GLOBAL ast | LOAD_ATTR Name | PRECALL | CALL | LOAD_GLOBAL NULL + isinstance | LOAD_FAST child | LOAD_ATTR ctx | LOAD_GLOBAL ast | LOAD_ATTR Load | PRECALL | CALL
+
+### _leading_comment_start argcount=2 varnames=('lines', 'lineno', 'start', 'index')
+  CONSTS: (None, 2, 0, '#', 1)
+  179: LOAD_FAST lineno | STORE_FAST start
+  180: LOAD_FAST lineno | LOAD_CONST 2 | BINARY_OP - | STORE_FAST index
+  181: LOAD_FAST index | LOAD_CONST 0 | COMPARE_OP >= | POP_JUMP_FORWARD_IF_FALSE to 240 | LOAD_FAST lines | LOAD_FAST index | BINARY_SUBSCR | LOAD_METHOD lstrip | PRECALL | CALL | LOAD_METHOD startswith | LOAD_CONST '#' | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 240 | LOAD_FAST index | LOAD_CONST 0 | COMPARE_OP >= | POP_JUMP_FORWARD_IF_FALSE to 240 | LOAD_FAST lines | LOAD_FAST index | BINARY_SUBSCR | LOAD_METHOD lstrip | PRECALL | CALL | LOAD_METHOD startswith | LOAD_CONST '#' | PRECALL | CALL | POP_JUMP_BACKWARD_IF_TRUE to 118
+  182: LOAD_FAST index | LOAD_CONST 1 | BINARY_OP + | STORE_FAST start
+  183: LOAD_FAST index | LOAD_CONST 1 | BINARY_OP -= | STORE_FAST index
+  184: LOAD_FAST start | RETURN_VALUE
+
+### _render_imports argcount=2 varnames=('module_path', 'needed', 'depth', 'stdlib', 'internal', 'name', '@py_assert1', '@py_assert3', '@py_assert0', '@py_assert9', '@py_format5', '@py_format7', '@py_format11', '@py_format13', '@py_format14', '@py_format16', 'source', 'lines', 'names', 'dotted', 'prefix', 'ordered', 'body')
+  CONSTS: (None, '/', ('in',), ('%(py2)s in %(py4)s',), 'name', 'TARGETS', ('py2', 'py4'), '%(py6)s', 'py6', ('%(py8)s in %(py10)s',), 'EXTERNAL_SOURCES', ('py8', 'py10'), '%(py12)s', 'py12', 1, 'unknown global ', ' used by ', '\n>assert %(py15)s', 'py15', -3, '.', 'from ', ' import ', 0, '\n', <code object <genexpr> at 0x108a14b90, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 211>, ' import (\n', '\n)')
+  188: LOAD_FAST module_path | LOAD_METHOD count | LOAD_CONST '/' | PRECALL | CALL | STORE_FAST depth
+  189: LOAD_GLOBAL NULL + set | PRECALL | CALL | STORE_FAST stdlib
+  190: BUILD_MAP | STORE_FAST internal
+  192: LOAD_GLOBAL NULL + sorted | LOAD_FAST needed | PRECALL | CALL | GET_ITER | FOR_ITER to 1432 | STORE_FAST name
+  193: LOAD_FAST name | LOAD_GLOBAL STDLIB_IMPORTS | CONTAINS_OP | POP_JUMP_FORWARD_IF_FALSE to 196
+  194: LOAD_FAST stdlib | LOAD_METHOD add | LOAD_GLOBAL STDLIB_IMPORTS | LOAD_FAST name | BINARY_SUBSCR | PRECALL | CALL | POP_TOP
+  195: JUMP_BACKWARD to 106
+  196: BUILD_LIST | LOAD_FAST name | LOAD_GLOBAL TARGETS | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 248 | LOAD_FAST name | LOAD_GLOBAL EXTERNAL_SOURCES | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1228 | LOAD_CONST ('in',) | BUILD_TUPLE | LOAD_CONST ('%(py2)s in %(py4)s',) | LOAD_FAST name | LOAD_GLOBAL TARGETS | BUILD_TUPLE | PRECALL | CALL | LOAD_CONST 'name' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 396 | LOAD_FAST name | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 436 | LOAD_FAST name | PRECALL | CALL | JUMP_FORWARD to 438 | LOAD_CONST 'name' | LOAD_CONST 'TARGETS' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 530 | LOAD_GLOBAL TARGETS | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 580 | LOAD_GLOBAL TARGETS | PRECALL | CALL | JUMP_FORWARD to 582 | LOAD_CONST 'TARGETS' | LOAD_CONST ('py2', 'py4') | BUILD_CONST_KEY_MAP | BINARY_OP % | LOAD_CONST '%(py6)s' | LOAD_CONST 'py6' | BUILD_MAP | BINARY_OP % | POP_JUMP_FORWARD_IF_TRUE to 1046 | LOAD_CONST ('in',) | BUILD_TUPLE | LOAD_CONST ('%(py8)s in %(py10)s',) | LOAD_FAST name | LOAD_GLOBAL EXTERNAL_SOURCES | BUILD_TUPLE | PRECALL | CALL | LOAD_CONST 'name' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 794 | LOAD_FAST name | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 834 | LOAD_FAST name | PRECALL | CALL | JUMP_FORWARD to 836 | LOAD_CONST 'name' | LOAD_CONST 'EXTERNAL_SOURCES' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 928 | LOAD_GLOBAL EXTERNAL_SOURCES | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 978 | LOAD_GLOBAL EXTERNAL_SOURCES | PRECALL | CALL | JUMP_FORWARD to 980 | LOAD_CONST 'EXTERNAL_SOURCES' | LOAD_CONST ('py8', 'py10') | BUILD_CONST_KEY_MAP | BINARY_OP % | LOAD_CONST '%(py12)s' | LOAD_CONST 'py12' | BUILD_MAP | BINARY_OP % | LOAD_CONST 1 | PRECALL | CALL | BUILD_MAP | BINARY_OP % | PRECALL | CALL | LOAD_CONST '\n>assert %(py15)s' | BINARY_OP + | LOAD_CONST 'py15' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None
+  197: LOAD_CONST 'unknown global ' | LOAD_FAST name | FORMAT_VALUE repr | LOAD_CONST ' used by ' | LOAD_FAST module_path | FORMAT_VALUE | BUILD_STRING
+  198: LOAD_ATTR locals | LOAD_ATTR locals | LOAD_METHOD append | PRECALL | CALL | POP_TOP | LOAD_ATTR locals | LOAD_ATTR locals | LOAD_METHOD append | PRECALL | CALL | POP_TOP | LOAD_ATTR _format_boolop
+  199: LOAD_GLOBAL EXTERNAL_SOURCES | LOAD_METHOD get | LOAD_FAST name | PRECALL | CALL | JUMP_IF_TRUE_OR_POP to 1320 | LOAD_GLOBAL TARGETS | LOAD_FAST name | BINARY_SUBSCR | STORE_FAST source
+  200: LOAD_FAST internal | LOAD_METHOD setdefault | LOAD_FAST source | LOAD_GLOBAL NULL + set | PRECALL | CALL | PRECALL | CALL | LOAD_METHOD add | LOAD_FAST name | PRECALL | CALL | POP_TOP | JUMP_BACKWARD to 106
+  202: LOAD_GLOBAL NULL + sorted | LOAD_FAST stdlib | PRECALL | CALL | STORE_FAST lines
+  204: LOAD_GLOBAL NULL + sorted | LOAD_FAST internal | LOAD_METHOD items | PRECALL | CALL | PRECALL | CALL | GET_ITER | FOR_ITER to 1878 | UNPACK_SEQUENCE | STORE_FAST source | STORE_FAST names
+  205: LOAD_FAST source | LOAD_CONST None | LOAD_CONST -3 | BUILD_SLICE | BINARY_SUBSCR | LOAD_METHOD replace | LOAD_CONST '/' | LOAD_CONST '.' | PRECALL | CALL | STORE_FAST dotted
+  206: LOAD_CONST '.' | LOAD_FAST depth | LOAD_CONST 1 | BINARY_OP + | BINARY_OP * | STORE_FAST prefix
+  207: LOAD_GLOBAL NULL + sorted | LOAD_FAST names | PRECALL | CALL | STORE_FAST ordered
+  208: LOAD_GLOBAL NULL + len | LOAD_FAST ordered | PRECALL | CALL | LOAD_CONST 1 | COMPARE_OP == | POP_JUMP_FORWARD_IF_FALSE to 1754
+  209: LOAD_FAST lines | LOAD_METHOD append | LOAD_CONST 'from ' | LOAD_FAST prefix | FORMAT_VALUE | LOAD_FAST dotted | FORMAT_VALUE | LOAD_CONST ' import ' | LOAD_FAST ordered | LOAD_CONST 0 | BINARY_SUBSCR | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | POP_TOP
+  210: JUMP_BACKWARD to 1528
+  211: LOAD_CONST '\n' | LOAD_METHOD join | LOAD_CONST <code object <genexpr> at 0x108a14b90, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 211> | MAKE_FUNCTION | LOAD_FAST ordered | GET_ITER | PRECALL | CALL | PRECALL | CALL | STORE_FAST body
+  212: LOAD_FAST lines | LOAD_METHOD append | LOAD_CONST 'from ' | LOAD_FAST prefix | FORMAT_VALUE | LOAD_FAST dotted | FORMAT_VALUE | LOAD_CONST ' import (\n' | LOAD_FAST body | FORMAT_VALUE | LOAD_CONST '\n)' | BUILD_STRING | PRECALL | CALL | POP_TOP | JUMP_BACKWARD to 1528
+  214: LOAD_FAST lines | RETURN_VALUE
+
+### <genexpr> argcount=1 varnames=('.0', 'name')
+  CONSTS: ('    ', ',', None)
+  211: RETURN_GENERATOR | POP_TOP | LOAD_FAST .0 | FOR_ITER to 30 | STORE_FAST name | LOAD_CONST '    ' | LOAD_FAST name | FORMAT_VALUE | LOAD_CONST ',' | BUILD_STRING | YIELD_VALUE | POP_TOP | JUMP_BACKWARD to 8 | LOAD_CONST None | RETURN_VALUE
+
+### _collect_segments argcount=2 varnames=('lines', 'tree', 'funcs', 'assigns', 'unmapped', '@py_assert1', '@py_format2', 'unknown_targets', 'segments', 'name', 'node', 'start', 'previous_end', 'end', '_node', '@py_format3', '@py_format5', '_name', 'uncovered')
+  CONSTS: (None, 'top-level names without a target module: ', '\n>assert not %(py0)s', 'py0', 'unmapped', 'targets without a definition: ', 'unknown_targets', 0, ('>',), ('%(py0)s > %(py2)s',), 'start', 'previous_end', ('py0', 'py2'), 'overlapping segment for ', ' at ', '\n>assert %(py4)s', 'py4', 1, <code object <listcomp> at 0x108a10250, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 241>, 'code lines that would not be migrated: ', 'uncovered')
+  218: LOAD_GLOBAL NULL + _definitions | LOAD_FAST tree | PRECALL | CALL | UNPACK_SEQUENCE | STORE_FAST funcs | STORE_FAST assigns
+  220: LOAD_GLOBAL NULL + sorted | LOAD_GLOBAL NULL + set | LOAD_FAST funcs | PRECALL | CALL | LOAD_GLOBAL NULL + set | LOAD_FAST assigns | PRECALL | CALL | BINARY_OP | | LOAD_GLOBAL NULL + set | LOAD_GLOBAL TARGETS | PRECALL | CALL | BINARY_OP - | PRECALL | CALL | STORE_FAST unmapped
+  221: LOAD_FAST unmapped | UNARY_NOT | POP_JUMP_FORWARD_IF_TRUE to 432 | LOAD_CONST 'top-level names without a target module: ' | LOAD_FAST unmapped | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | LOAD_CONST '\n>assert not %(py0)s' | BINARY_OP + | LOAD_CONST 'py0' | LOAD_CONST 'unmapped' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 316 | LOAD_FAST unmapped | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 356 | LOAD_FAST unmapped | PRECALL | CALL | JUMP_FORWARD to 358 | LOAD_CONST 'unmapped' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None
+  223: LOAD_GLOBAL NULL + sorted | LOAD_GLOBAL NULL + set | LOAD_GLOBAL TARGETS | PRECALL | CALL | LOAD_GLOBAL NULL + set | LOAD_FAST funcs | PRECALL | CALL | BINARY_OP - | LOAD_GLOBAL NULL + set | LOAD_FAST assigns | PRECALL | CALL | BINARY_OP - | PRECALL | CALL | STORE_FAST unknown_targets
+  224: LOAD_FAST unknown_targets | UNARY_NOT | POP_JUMP_FORWARD_IF_TRUE to 826 | LOAD_CONST 'targets without a definition: ' | LOAD_FAST unknown_targets | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | LOAD_CONST '\n>assert not %(py0)s' | BINARY_OP + | LOAD_CONST 'py0' | LOAD_CONST 'unknown_targets' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 710 | LOAD_FAST unknown_targets | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 750 | LOAD_FAST unknown_targets | PRECALL | CALL | JUMP_FORWARD to 752 | LOAD_CONST 'unknown_targets' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None
+  226: BUILD_LIST | STORE_FAST segments
+  227: LOAD_GLOBAL NULL + list | LOAD_FAST assigns | LOAD_METHOD items | PRECALL | CALL | PRECALL | CALL | LOAD_GLOBAL NULL + list | LOAD_FAST funcs | LOAD_METHOD items | PRECALL | CALL | PRECALL | CALL | BINARY_OP + | GET_ITER | FOR_ITER to 1082 | UNPACK_SEQUENCE | STORE_FAST name | STORE_FAST node
+  228: LOAD_GLOBAL NULL + _leading_comment_start | LOAD_DEREF lines | LOAD_FAST node | LOAD_ATTR lineno | PRECALL | CALL | STORE_FAST start
+  229: LOAD_FAST segments | LOAD_METHOD append | LOAD_FAST start | LOAD_FAST node | LOAD_ATTR end_lineno | LOAD_FAST name | LOAD_FAST node | BUILD_TUPLE | PRECALL | CALL | POP_TOP | JUMP_BACKWARD to 968
+  230: LOAD_FAST segments | LOAD_METHOD sort | PRECALL | CALL | POP_TOP
+  232: LOAD_CONST 0 | STORE_FAST previous_end
+  233: LOAD_FAST segments | GET_ITER | FOR_ITER to 1612 | UNPACK_SEQUENCE | STORE_FAST start | STORE_FAST end | STORE_FAST name | STORE_FAST _node
+  234: LOAD_FAST start | LOAD_FAST previous_end | COMPARE_OP > | POP_JUMP_FORWARD_IF_TRUE to 1602 | LOAD_CONST ('>',) | BUILD_TUPLE | LOAD_CONST ('%(py0)s > %(py2)s',) | LOAD_FAST start | LOAD_FAST previous_end | BUILD_TUPLE | PRECALL | CALL | LOAD_CONST 'start' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1292 | LOAD_FAST start | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 1332 | LOAD_FAST start | PRECALL | CALL | JUMP_FORWARD to 1334 | LOAD_CONST 'start' | LOAD_CONST 'previous_end' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1416 | LOAD_FAST previous_end | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 1456 | LOAD_FAST previous_end | PRECALL | CALL | JUMP_FORWARD to 1458 | LOAD_CONST 'previous_end' | LOAD_CONST ('py0', 'py2') | BUILD_CONST_KEY_MAP | BINARY_OP % | LOAD_CONST 'overlapping segment for ' | LOAD_FAST name | FORMAT_VALUE repr | LOAD_CONST ' at ' | LOAD_FAST start | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | LOAD_CONST '\n>assert %(py4)s' | BINARY_OP + | LOAD_CONST 'py4' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None
+  235: LOAD_FAST end | STORE_FAST previous_end | JUMP_BACKWARD to 1130
+  237: LOAD_GLOBAL NULL + set | PRECALL | CALL | STORE_DEREF covered
+  238: LOAD_FAST segments | GET_ITER | FOR_ITER to 1736 | UNPACK_SEQUENCE | STORE_FAST start | STORE_FAST end | STORE_FAST _name | STORE_FAST _node
+  239: LOAD_DEREF covered | LOAD_METHOD update | LOAD_GLOBAL NULL + range | LOAD_FAST start | LOAD_FAST end | LOAD_CONST 1 | BINARY_OP + | PRECALL | CALL | PRECALL | CALL | POP_TOP | JUMP_BACKWARD to 1644
+  241: LOAD_CLOSURE covered | LOAD_CLOSURE lines | BUILD_TUPLE | LOAD_CONST <code object <listcomp> at 0x108a10250, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 241> | MAKE_FUNCTION closure | GET_ITER | PRECALL | CALL | STORE_FAST uncovered
+  243: LOAD_GLOBAL NULL + range | LOAD_GLOBAL IMPORT_LINES | LOAD_CONST 1 | BINARY_OP + | LOAD_GLOBAL NULL + len | LOAD_DEREF lines | PRECALL | CALL | LOAD_CONST 1 | BINARY_OP + | PRECALL | CALL
+  246: LOAD_FAST uncovered | UNARY_NOT | POP_JUMP_FORWARD_IF_TRUE to 2102 | LOAD_CONST 'code lines that would not be migrated: ' | LOAD_FAST uncovered | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | LOAD_CONST '\n>assert not %(py0)s' | BINARY_OP + | LOAD_CONST 'py0' | LOAD_CONST 'uncovered' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1986 | LOAD_FAST uncovered | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 2026 | LOAD_FAST uncovered | PRECALL | CALL | JUMP_FORWARD to 2028 | LOAD_CONST 'uncovered' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None
+  248: LOAD_FAST segments | RETURN_VALUE
+  None: MAKE_CELL lines | MAKE_CELL covered
+
+### <listcomp> argcount=1 varnames=('.0', 'number')
+  CONSTS: (1,)
+  241: BUILD_LIST | LOAD_FAST .0 | FOR_ITER to 84
+  242: LOAD_FAST number
+  243: STORE_FAST number
+  244: LOAD_FAST number | LOAD_DEREF covered | CONTAINS_OP | POP_JUMP_BACKWARD_IF_FALSE to 8 | LOAD_DEREF lines | LOAD_FAST number | LOAD_CONST 1 | BINARY_OP - | BINARY_SUBSCR | LOAD_METHOD strip | PRECALL | CALL | POP_JUMP_BACKWARD_IF_FALSE to 8 | LIST_APPEND | JUMP_BACKWARD to 8 | RETURN_VALUE
+  None: COPY_FREE_VARS
+
+### _build_contents argcount=2 varnames=('lines', 'segments', 'modules', 'segment', 'contents', 'module_path', 'module_segments', 'defined', 'used', '_start', '_end', '_name', 'node', 'body', 'text', 'imports')
+  CONSTS: (None, 2, <code object <setcomp> at 0x108a14d50, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 258>, '\n\n\n', <code object <genexpr> at 0x1089dc030, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 264>, '"""', '"""\n', '\n')
+  252: BUILD_MAP | STORE_FAST modules
+  253: LOAD_FAST segments | GET_ITER | FOR_ITER to 134 | STORE_FAST segment
+  254: LOAD_FAST modules | LOAD_METHOD setdefault | LOAD_GLOBAL TARGETS | LOAD_FAST segment | LOAD_CONST 2 | BINARY_SUBSCR | BINARY_SUBSCR | BUILD_LIST | PRECALL | CALL | LOAD_METHOD append | LOAD_FAST segment | PRECALL | CALL | POP_TOP | JUMP_BACKWARD to 12
+  256: BUILD_MAP | STORE_FAST contents
+  257: LOAD_FAST modules | LOAD_METHOD items | PRECALL | CALL | GET_ITER | FOR_ITER to 532 | UNPACK_SEQUENCE | STORE_FAST module_path | STORE_FAST module_segments
+  258: LOAD_CONST <code object <setcomp> at 0x108a14d50, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 258> | MAKE_FUNCTION | LOAD_FAST module_segments | GET_ITER | PRECALL | CALL | STORE_FAST defined
+  260: LOAD_GLOBAL NULL + set | PRECALL | CALL | STORE_FAST used
+  261: LOAD_FAST module_segments | GET_ITER | FOR_ITER to 296 | UNPACK_SEQUENCE | STORE_FAST _start | STORE_FAST _end | STORE_FAST _name | STORE_FAST node
+  262: LOAD_FAST used | LOAD_GLOBAL NULL + _free_names | LOAD_FAST node | PRECALL | CALL | BINARY_OP |= | STORE_FAST used | JUMP_BACKWARD to 244
+  264: LOAD_CONST '\n\n\n' | LOAD_METHOD join | LOAD_CLOSURE lines | BUILD_TUPLE | LOAD_CONST <code object <genexpr> at 0x1089dc030, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_refactor_migration.py", line 264> | MAKE_FUNCTION closure | GET_ITER | PRECALL | CALL | PRECALL | CALL | STORE_FAST body
+  266: LOAD_FAST module_segments
+  269: LOAD_CONST '"""' | LOAD_GLOBAL DOCSTRINGS | LOAD_FAST module_path | BINARY_SUBSCR | FORMAT_VALUE | LOAD_CONST '"""\n' | BUILD_STRING | STORE_FAST text
+  270: LOAD_GLOBAL NULL + _render_imports | LOAD_FAST module_path | LOAD_FAST used | LOAD_FAST defined | BINARY_OP - | PRECALL | CALL | STORE_FAST imports
+  271: LOAD_FAST imports | POP_JUMP_FORWARD_IF_FALSE to 498
+  272: LOAD_FAST text | LOAD_CONST '\n' | LOAD_CONST '\n' | LOAD_METHOD join | LOAD_FAST imports | PRECALL | CALL | BINARY_OP + | LOAD_CONST '\n' | BINARY_OP + | BINARY_OP += | STORE_FAST text
+  273: LOAD_FAST text | LOAD_CONST '\n' | LOAD_FAST body | BINARY_OP + | LOAD_CONST '\n' | BINARY_OP + | BINARY_OP += | STORE_FAST text
+  275: LOAD_FAST text | LOAD_FAST contents | LOAD_FAST module_path | STORE_SUBSCR | JUMP_BACKWARD to 178
+  277: LOAD_FAST contents | RETURN_VALUE
+  None: MAKE_CELL lines
+
+### <setcomp> argcount=1 varnames=('.0', '_start', '_end', 'name', '_node')
+  CONSTS: ()
+  258: BUILD_SET | LOAD_FAST .0 | FOR_ITER to 26 | UNPACK_SEQUENCE | STORE_FAST _start | STORE_FAST _end | STORE_FAST name | STORE_FAST _node | LOAD_FAST name | SET_ADD | JUMP_BACKWARD to 6 | RETURN_VALUE
+
+### <genexpr> argcount=1 varnames=('.0', 'start', 'end', '_name', '_node')
+  CONSTS: ('\n', 1, None)
+  264: RETURN_GENERATOR | POP_TOP | LOAD_FAST .0 | FOR_ITER to 130 | YIELD_VALUE | POP_TOP | JUMP_BACKWARD to 10 | LOAD_CONST None | RETURN_VALUE
+  265: LOAD_CONST '\n' | LOAD_METHOD join | LOAD_DEREF lines | LOAD_FAST start | LOAD_CONST 1 | BINARY_OP - | LOAD_FAST end | BUILD_SLICE | BINARY_SUBSCR | PRECALL | CALL | LOAD_METHOD rstrip | PRECALL | CALL
+  266: UNPACK_SEQUENCE | STORE_FAST start | STORE_FAST end | STORE_FAST _name | STORE_FAST _node
+  None: COPY_FREE_VARS
+
+### _verify argcount=2 varnames=('original_tree', 'contents', 'original_funcs', 'original_assigns', 'found_funcs', 'found_assigns', 'module_path', 'text', 'tree', 'funcs', 'assigns', 'name', 'node', '@py_assert1', '@py_format3', '@py_format5', '@py_assert2', '@py_assert7', '@py_assert4', '@py_format9', '@py_format11', '@py_assert8', '@py_assert10', '@py_assert12', '@py_assert6', '@py_format14', '@py_format16')
+  CONSTS: (None, ('filename',), ('not in',), ('%(py0)s not in %(py2)s',), 'name', 'found_funcs', ('py0', 'py2'), 'duplicate function: ', '\n>assert %(py4)s', 'py4', 'found_assigns', 'duplicate assignment: ', ('==',), ('%(py3)s\n{%(py3)s = %(py0)s(%(py1)s)\n} == %(py8)s\n{%(py8)s = %(py5)s(%(py6)s)\n}',), 'set', 'original_funcs', ('py0', 'py1', 'py3', 'py5', 'py6', 'py8'), 'function mismatch: ', '\n>assert %(py10)s', 'py10', 'original_assigns', 'assignment mismatch: ', ('%(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.dump\n}(%(py3)s)\n} == %(py13)s\n{%(py13)s = %(py9)s\n{%(py9)s = %(py7)s.dump\n}(%(py11)s)\n}',), 'ast', 'node', ('py0', 'py2', 'py3', 'py5', 'py7', 'py9', 'py11', 'py13'), 'changed function: ', '\n>assert %(py15)s', 'py15', 'changed assignment: ')
+  281: LOAD_GLOBAL NULL + _definitions | LOAD_FAST original_tree | PRECALL | CALL | UNPACK_SEQUENCE | STORE_FAST original_funcs | STORE_FAST original_assigns
+  283: BUILD_MAP | STORE_FAST found_funcs
+  284: BUILD_MAP | STORE_FAST found_assigns
+  285: LOAD_FAST contents | LOAD_METHOD items | PRECALL | CALL | GET_ITER | FOR_ITER to 1210 | UNPACK_SEQUENCE | STORE_FAST module_path | STORE_FAST text
+  286: LOAD_GLOBAL NULL + ast | LOAD_ATTR parse | LOAD_FAST text | LOAD_FAST module_path | KW_NAMES NAMES=<unknown> | PRECALL | CALL | STORE_FAST tree
+  287: LOAD_GLOBAL NULL + _definitions | LOAD_FAST tree | PRECALL | CALL | UNPACK_SEQUENCE | STORE_FAST funcs | STORE_FAST assigns
+  288: LOAD_FAST funcs | LOAD_METHOD items | PRECALL | CALL | GET_ITER | FOR_ITER to 692 | UNPACK_SEQUENCE | STORE_FAST name | STORE_FAST node
+  289: LOAD_FAST name | LOAD_FAST found_funcs | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 676 | LOAD_CONST ('not in',) | BUILD_TUPLE | LOAD_CONST ('%(py0)s not in %(py2)s',) | LOAD_FAST name | LOAD_FAST found_funcs | BUILD_TUPLE | PRECALL | CALL | LOAD_CONST 'name' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 372 | LOAD_FAST name | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 412 | LOAD_FAST name | PRECALL | CALL | JUMP_FORWARD to 414 | LOAD_CONST 'name' | LOAD_CONST 'found_funcs' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 496 | LOAD_FAST found_funcs | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 536 | LOAD_FAST found_funcs | PRECALL | CALL | JUMP_FORWARD to 538 | LOAD_CONST 'found_funcs' | LOAD_CONST ('py0', 'py2') | BUILD_CONST_KEY_MAP | BINARY_OP % | LOAD_CONST 'duplicate function: ' | LOAD_FAST name | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | LOAD_CONST '\n>assert %(py4)s' | BINARY_OP + | LOAD_CONST 'py4' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None
+  290: LOAD_FAST node | LOAD_FAST found_funcs | LOAD_FAST name | STORE_SUBSCR | JUMP_BACKWARD to 218
+  291: LOAD_FAST assigns | LOAD_METHOD items | PRECALL | CALL | GET_ITER | FOR_ITER to 1206 | UNPACK_SEQUENCE | STORE_FAST name | STORE_FAST node | JUMP_BACKWARD to 86
+  292: LOAD_FAST name | LOAD_FAST found_assigns | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1190 | LOAD_CONST ('not in',) | BUILD_TUPLE | LOAD_CONST ('%(py0)s not in %(py2)s',) | LOAD_FAST name | LOAD_FAST found_assigns | BUILD_TUPLE | PRECALL | CALL | LOAD_CONST 'name' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 886 | LOAD_FAST name | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 926 | LOAD_FAST name | PRECALL | CALL | JUMP_FORWARD to 928 | LOAD_CONST 'name' | LOAD_CONST 'found_assigns' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1010 | LOAD_FAST found_assigns | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 1050 | LOAD_FAST found_assigns | PRECALL | CALL | JUMP_FORWARD to 1052 | LOAD_CONST 'found_assigns' | LOAD_CONST ('py0', 'py2') | BUILD_CONST_KEY_MAP | BINARY_OP % | LOAD_CONST 'duplicate assignment: ' | LOAD_FAST name | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | LOAD_CONST '\n>assert %(py4)s' | BINARY_OP + | LOAD_CONST 'py4' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None
+  293: LOAD_FAST node | LOAD_FAST found_assigns | LOAD_FAST name | STORE_SUBSCR | JUMP_BACKWARD to 732
+  295: LOAD_GLOBAL NULL + set | LOAD_FAST found_funcs | PRECALL | CALL | LOAD_GLOBAL NULL + set | LOAD_FAST original_funcs | PRECALL | CALL | COMPARE_OP == | POP_JUMP_FORWARD_IF_TRUE to 2172 | LOAD_CONST ('==',) | BUILD_TUPLE | LOAD_CONST ('%(py3)s\n{%(py3)s = %(py0)s(%(py1)s)\n} == %(py8)s\n{%(py8)s = %(py5)s(%(py6)s)\n}',) | BUILD_TUPLE | PRECALL | CALL | LOAD_CONST 'set' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1430 | LOAD_GLOBAL set | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 1480 | LOAD_GLOBAL set | PRECALL | CALL | JUMP_FORWARD to 1482 | LOAD_CONST 'set' | LOAD_CONST 'found_funcs' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1564 | LOAD_FAST found_funcs | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 1604 | LOAD_FAST found_funcs | PRECALL | CALL | JUMP_FORWARD to 1606 | LOAD_CONST 'found_funcs' | PRECALL | CALL | LOAD_CONST 'set' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1736 | LOAD_GLOBAL set | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 1786 | LOAD_GLOBAL set | PRECALL | CALL | JUMP_FORWARD to 1788 | LOAD_CONST 'set' | LOAD_CONST 'original_funcs' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1870 | LOAD_FAST original_funcs | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 1910 | LOAD_FAST original_funcs | PRECALL | CALL | JUMP_FORWARD to 1912 | LOAD_CONST 'original_funcs' | PRECALL | CALL | LOAD_CONST ('py0', 'py1', 'py3', 'py5', 'py6', 'py8') | BUILD_CONST_KEY_MAP | BINARY_OP % | PRECALL | CALL | LOAD_CONST '\n>assert %(py10)s' | BINARY_OP + | LOAD_CONST 'py10' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None
+  296: LOAD_CONST 'function mismatch: ' | LOAD_GLOBAL NULL + sorted | LOAD_GLOBAL NULL + set | LOAD_FAST found_funcs | PRECALL | CALL | LOAD_GLOBAL NULL + set | LOAD_FAST original_funcs | PRECALL | CALL | BINARY_OP ^ | PRECALL | CALL | FORMAT_VALUE | BUILD_STRING
+  297: LOAD_ATTR locals | LOAD_ATTR locals | LOAD_ATTR locals | LOAD_ATTR locals
+  298: LOAD_GLOBAL NULL + set | LOAD_FAST found_assigns | PRECALL | CALL | LOAD_GLOBAL NULL + set | LOAD_FAST original_assigns | PRECALL | CALL | COMPARE_OP == | POP_JUMP_FORWARD_IF_TRUE to 3146 | LOAD_CONST ('==',) | BUILD_TUPLE | LOAD_CONST ('%(py3)s\n{%(py3)s = %(py0)s(%(py1)s)\n} == %(py8)s\n{%(py8)s = %(py5)s(%(py6)s)\n}',) | BUILD_TUPLE | PRECALL | CALL | LOAD_CONST 'set' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 2404 | LOAD_GLOBAL set | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 2454 | LOAD_GLOBAL set | PRECALL | CALL | JUMP_FORWARD to 2456 | LOAD_CONST 'set' | LOAD_CONST 'found_assigns' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 2538 | LOAD_FAST found_assigns | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 2578 | LOAD_FAST found_assigns | PRECALL | CALL | JUMP_FORWARD to 2580 | LOAD_CONST 'found_assigns' | PRECALL | CALL | LOAD_CONST 'set' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 2710 | LOAD_GLOBAL set | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 2760 | LOAD_GLOBAL set | PRECALL | CALL | JUMP_FORWARD to 2762 | LOAD_CONST 'set' | LOAD_CONST 'original_assigns' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 2844 | LOAD_FAST original_assigns | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 2884 | LOAD_FAST original_assigns | PRECALL | CALL | JUMP_FORWARD to 2886 | LOAD_CONST 'original_assigns' | PRECALL | CALL | LOAD_CONST ('py0', 'py1', 'py3', 'py5', 'py6', 'py8') | BUILD_CONST_KEY_MAP | BINARY_OP % | PRECALL | CALL | LOAD_CONST '\n>assert %(py10)s' | BINARY_OP + | LOAD_CONST 'py10' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None
+  299: LOAD_CONST 'assignment mismatch: ' | LOAD_GLOBAL NULL + sorted | LOAD_GLOBAL NULL + set | LOAD_FAST found_assigns | PRECALL | CALL | LOAD_GLOBAL NULL + set | LOAD_FAST original_assigns | PRECALL | CALL | BINARY_OP ^ | PRECALL | CALL | FORMAT_VALUE | BUILD_STRING
+  300: LOAD_ATTR locals | LOAD_ATTR locals | LOAD_ATTR locals | LOAD_ATTR locals
+  302: LOAD_FAST original_funcs | LOAD_METHOD items | PRECALL | CALL | GET_ITER | FOR_ITER to 4154 | UNPACK_SEQUENCE | STORE_FAST name | STORE_FAST node
+  303: LOAD_GLOBAL ast | LOAD_ATTR dump | PUSH_NULL | LOAD_FAST node | PRECALL | CALL | LOAD_GLOBAL ast | LOAD_ATTR dump | LOAD_FAST found_funcs | LOAD_FAST name | BINARY_SUBSCR | PUSH_NULL | PRECALL | CALL | COMPARE_OP == | POP_JUMP_FORWARD_IF_TRUE to 4126 | LOAD_CONST ('==',) | BUILD_TUPLE | LOAD_CONST ('%(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.dump\n}(%(py3)s)\n} == %(py13)s\n{%(py13)s = %(py9)s\n{%(py9)s = %(py7)s.dump\n}(%(py11)s)\n}',) | BUILD_TUPLE | PRECALL | CALL | LOAD_CONST 'ast' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 3478 | LOAD_GLOBAL ast | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 3528 | LOAD_GLOBAL ast | PRECALL | CALL | JUMP_FORWARD to 3530 | LOAD_CONST 'ast' | PRECALL | CALL | LOAD_CONST 'node' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 3650 | LOAD_FAST node | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 3690 | LOAD_FAST node | PRECALL | CALL | JUMP_FORWARD to 3692 | LOAD_CONST 'node' | PRECALL | CALL | LOAD_CONST 'ast' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 3822 | LOAD_GLOBAL ast | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 3872 | LOAD_GLOBAL ast | PRECALL | CALL | JUMP_FORWARD to 3874 | LOAD_CONST 'ast' | PRECALL | CALL | PRECALL | CALL | PRECALL | CALL | LOAD_CONST ('py0', 'py2', 'py3', 'py5', 'py7', 'py9', 'py11', 'py13') | BUILD_CONST_KEY_MAP | BINARY_OP % | LOAD_CONST 'changed function: ' | LOAD_FAST name | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | LOAD_CONST '\n>assert %(py15)s' | BINARY_OP + | LOAD_CONST 'py15' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None | JUMP_BACKWARD to 3198
+  305: LOAD_FAST original_assigns | LOAD_METHOD items | PRECALL | CALL | GET_ITER | FOR_ITER to 5150 | UNPACK_SEQUENCE | STORE_FAST name | STORE_FAST node
+  306: LOAD_GLOBAL ast | LOAD_ATTR dump | PUSH_NULL | LOAD_FAST node | PRECALL | CALL | LOAD_GLOBAL ast | LOAD_ATTR dump | LOAD_FAST found_assigns | LOAD_FAST name | BINARY_SUBSCR | PUSH_NULL | PRECALL | CALL | COMPARE_OP == | POP_JUMP_FORWARD_IF_TRUE to 5122 | LOAD_CONST ('==',) | BUILD_TUPLE | LOAD_CONST ('%(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.dump\n}(%(py3)s)\n} == %(py13)s\n{%(py13)s = %(py9)s\n{%(py9)s = %(py7)s.dump\n}(%(py11)s)\n}',) | BUILD_TUPLE | PRECALL | CALL | LOAD_CONST 'ast' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 4474 | LOAD_GLOBAL ast | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 4524 | LOAD_GLOBAL ast | PRECALL | CALL | JUMP_FORWARD to 4526 | LOAD_CONST 'ast' | PRECALL | CALL | LOAD_CONST 'node' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 4646 | LOAD_FAST node | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 4686 | LOAD_FAST node | PRECALL | CALL | JUMP_FORWARD to 4688 | LOAD_CONST 'node' | PRECALL | CALL | LOAD_CONST 'ast' | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 4818 | LOAD_GLOBAL ast | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 4868 | LOAD_GLOBAL ast | PRECALL | CALL | JUMP_FORWARD to 4870 | LOAD_CONST 'ast' | PRECALL | CALL | PRECALL | CALL | PRECALL | CALL | LOAD_CONST ('py0', 'py2', 'py3', 'py5', 'py7', 'py9', 'py11', 'py13') | BUILD_CONST_KEY_MAP | BINARY_OP % | PRECALL | CALL | LOAD_CONST '\n>assert %(py15)s' | BINARY_OP + | LOAD_CONST 'py15' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None | JUMP_BACKWARD to 4194
+  307: LOAD_CONST 'changed assignment: ' | LOAD_FAST name | FORMAT_VALUE | BUILD_STRING
+  308: LOAD_ATTR locals | LOAD_ATTR locals | LOAD_ATTR locals
+  310: LOAD_FAST found_funcs | RETURN_VALUE
+
+### test_split_main_into_modules argcount=0 varnames=('source', 'lines', 'original_tree', 'segments', 'contents', 'moved', 'module_path', 'text', 'target', 'tools_init', '@py_assert2', '@py_assert5', '@py_assert4', '@py_format7', '@py_format9')
+  CONSTS: (None, 'utf-8', ('encoding',), True, ('parents', 'exist_ok'), 'wrote ', 'tools', '__init__.py', 'rewrote ', 44, ('==',), ('%(py3)s\n{%(py3)s = %(py0)s(%(py1)s)\n} == %(py6)s',), 'len', 'moved', ('py0', 'py1', 'py3', 'py6'), '\n>assert %(py8)s', 'py8')
+  316: LOAD_GLOBAL ORIGINAL_MAIN | LOAD_METHOD read_text | LOAD_CONST 'utf-8' | KW_NAMES NAMES=<unknown> | PRECALL | CALL | STORE_FAST source
+  317: LOAD_FAST source | LOAD_METHOD splitlines | PRECALL | CALL | STORE_FAST lines
+  318: LOAD_GLOBAL NULL + ast | LOAD_ATTR parse | LOAD_FAST source | PRECALL | CALL | STORE_FAST original_tree
+  320: LOAD_GLOBAL NULL + _collect_segments | LOAD_FAST lines | LOAD_FAST original_tree | PRECALL | CALL | STORE_FAST segments
+  321: LOAD_GLOBAL NULL + _build_contents | LOAD_FAST lines | LOAD_FAST segments | PRECALL | CALL | STORE_FAST contents
+  322: LOAD_GLOBAL NULL + _verify | LOAD_FAST original_tree | LOAD_FAST contents | PRECALL | CALL | STORE_FAST moved
+  324: LOAD_GLOBAL NULL + sorted | LOAD_FAST contents | LOAD_METHOD items | PRECALL | CALL | PRECALL | CALL | GET_ITER | FOR_ITER to 468 | UNPACK_SEQUENCE | STORE_FAST module_path | STORE_FAST text
+  325: LOAD_GLOBAL PACKAGE_DIR | LOAD_FAST module_path | BINARY_OP / | STORE_FAST target
+  326: LOAD_FAST target | LOAD_ATTR parent | LOAD_METHOD mkdir | LOAD_CONST True | LOAD_CONST True | KW_NAMES NAMES=<unknown> | PRECALL | CALL | POP_TOP
+  327: LOAD_FAST target | LOAD_METHOD write_text | LOAD_FAST text | LOAD_CONST 'utf-8' | KW_NAMES NAMES=<unknown> | PRECALL | CALL | POP_TOP
+  328: LOAD_GLOBAL NULL + print | LOAD_CONST 'wrote ' | LOAD_FAST target | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | POP_TOP | JUMP_BACKWARD to 298
+  330: LOAD_GLOBAL PACKAGE_DIR | LOAD_CONST 'tools' | BINARY_OP / | LOAD_CONST '__init__.py' | BINARY_OP / | STORE_FAST tools_init
+  331: LOAD_FAST tools_init | LOAD_METHOD write_text | LOAD_GLOBAL TOOLS_INIT | LOAD_CONST 'utf-8' | KW_NAMES NAMES=<unknown> | PRECALL | CALL | POP_TOP
+  332: LOAD_GLOBAL NULL + print | LOAD_CONST 'wrote ' | LOAD_FAST tools_init | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | POP_TOP
+  334: LOAD_GLOBAL ORIGINAL_MAIN | LOAD_METHOD write_text | LOAD_GLOBAL MAIN_SHIM | LOAD_CONST 'utf-8' | KW_NAMES NAMES=<unknown> | PRECALL | CALL | POP_TOP
+  335: LOAD_GLOBAL NULL + print | LOAD_CONST 'rewrote ' | LOAD_GLOBAL ORIGINAL_MAIN | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | POP_TOP
+  337: LOAD_GLOBAL NULL + len | LOAD_FAST moved | PRECALL | CALL | LOAD_CONST 44 | COMPARE_OP == | POP_JUMP_FORWARD_IF_TRUE to 1302 | LOAD_CONST ('==',) | BUILD_TUPLE | LOAD_CONST ('%(py3)s\n{%(py3)s = %(py0)s(%(py1)s)\n} == %(py6)s',) | BUILD_TUPLE | PRECALL | CALL | LOAD_CONST 'len' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 892 | LOAD_GLOBAL len | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 942 | LOAD_GLOBAL len | PRECALL | CALL | JUMP_FORWARD to 944 | LOAD_CONST 'len' | LOAD_CONST 'moved' | LOAD_ATTR locals | PRECALL | CALL | CONTAINS_OP | POP_JUMP_FORWARD_IF_TRUE to 1026 | LOAD_FAST moved | PRECALL | CALL | POP_JUMP_FORWARD_IF_FALSE to 1066 | LOAD_FAST moved | PRECALL | CALL | JUMP_FORWARD to 1068 | LOAD_CONST 'moved' | PRECALL | CALL | PRECALL | CALL | LOAD_CONST ('py0', 'py1', 'py3', 'py6') | BUILD_CONST_KEY_MAP | BINARY_OP % | LOAD_GLOBAL NULL + len | LOAD_FAST moved | PRECALL | CALL | PRECALL | CALL | LOAD_CONST '\n>assert %(py8)s' | BINARY_OP + | LOAD_CONST 'py8' | BUILD_MAP | BINARY_OP % | PRECALL | CALL | PRECALL | CALL | RAISE_VARARGS | LOAD_CONST None
+  339: LOAD_CONST True | STORE_GLOBAL _generated | LOAD_CONST None | RETURN_VALUE
+
+### test_remove_migration_helper argcount=0 varnames=('helper',)
+  CONSTS: (None, 'removed ')
+  343: LOAD_GLOBAL _generated | POP_JUMP_FORWARD_IF_TRUE to 20
+  344: LOAD_CONST None | RETURN_VALUE
+  345: LOAD_GLOBAL NULL + Path | LOAD_GLOBAL __file__ | PRECALL | CALL | LOAD_METHOD resolve | PRECALL | CALL | STORE_FAST helper
+  346: LOAD_FAST helper | LOAD_METHOD unlink | PRECALL | CALL | POP_TOP
+  347: LOAD_GLOBAL NULL + print | LOAD_CONST 'removed ' | LOAD_FAST helper | FORMAT_VALUE | BUILD_STRING | PRECALL | CALL | POP_TOP | LOAD_CONST None | RETURN_VALUE
+

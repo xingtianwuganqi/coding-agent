@@ -1,0 +1,1255 @@
+### verified_state args=()
+    LOAD_GLOBAL agent
+    LOAD_METHOD AgentState
+    LOAD_GLOBAL agent
+    LOAD_METHOD TodoItem
+    LOAD_CONST 1
+    LOAD_CONST 'Run tests'
+    LOAD_GLOBAL agent
+    LOAD_ATTR TaskStatus
+    LOAD_ATTR COMPLETED
+    LOAD_GLOBAL TESTS
+    KW_NAMES 
+    CALL 
+    BUILD_LIST 
+    LOAD_GLOBAL TESTS
+    LOAD_CONST 0
+    BUILD_MAP 
+    KW_NAMES 
+    CALL 
+
+### test_edit_reopens_completed_verification args=('state', '@py_assert1', '@py_assert4', '@py_assert3', '@py_format6', '@py_format8', '@py_assert5', '@py_assert7', '@py_assert0', '@py_assert2', '@py_assert6', '@py_assert8', '@py_format10', '@py_format12', '@py_assert10', '@py_format14')
+    LOAD_GLOBAL NULL + verified_state
+    CALL 
+    STORE_FAST state
+    LOAD_GLOBAL agent
+    LOAD_METHOD mark_workspace_changed
+    LOAD_FAST state
+    CALL 
+    POP_TOP 
+    LOAD_FAST state
+    LOAD_ATTR workspace_revision
+    LOAD_CONST 1
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.workspace_revision\n} == %(py5)s',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py5')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py7)s'
+    LOAD_CONST 'py7'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_GLOBAL agent
+    LOAD_ATTR has_valid_evidence
+    LOAD_FAST state
+    LOAD_GLOBAL TESTS
+    CALL 
+    UNARY_NOT 
+    LOAD_CONST 'assert not %(py6)s\n{%(py6)s = %(py2)s\n{%(py2)s = %(py0)s.has_valid_evidence\n}(%(py3)s, %(py4)s)\n}'
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_CONST 'TESTS'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL TESTS
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL TESTS
+    CALL 
+    LOAD_CONST 'TESTS'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py3', 'py4', 'py6')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_FAST state
+    LOAD_ATTR todos
+    LOAD_CONST 0
+    BINARY_SUBSCR 
+    LOAD_ATTR status
+    LOAD_GLOBAL agent
+    LOAD_ATTR TaskStatus
+    LOAD_ATTR PENDING
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py3)s\n{%(py3)s = %(py1)s.status\n} == %(py9)s\n{%(py9)s = %(py7)s\n{%(py7)s = %(py5)s.TaskStatus\n}.PENDING\n}',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py1', 'py3', 'py5', 'py7', 'py9')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py11)s'
+    LOAD_CONST 'py11'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_GLOBAL agent
+    LOAD_ATTR get_completion_status
+    LOAD_FAST state
+    CALL 
+    LOAD_GLOBAL agent
+    LOAD_ATTR CompletionStatus
+    LOAD_ATTR INCOMPLETE
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.get_completion_status\n}(%(py3)s)\n} == %(py11)s\n{%(py11)s = %(py9)s\n{%(py9)s = %(py7)s.CompletionStatus\n}.INCOMPLETE\n}',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py3', 'py5', 'py7', 'py9', 'py11')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py13)s'
+    LOAD_CONST 'py13'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_CONST None
+
+### test_completion_rechecks_stale_evidence args=('state', '@py_assert1', '@py_assert4', '@py_assert6', '@py_format7', '@py_assert8', '@py_assert10', '@py_format12', '@py_format14')
+    LOAD_GLOBAL NULL + verified_state
+    CALL 
+    STORE_FAST state
+    LOAD_CONST 1
+    LOAD_FAST state
+    STORE_ATTR workspace_revision
+    LOAD_GLOBAL agent
+    LOAD_ATTR is_task_complete
+    LOAD_FAST state
+    CALL 
+    UNARY_NOT 
+    LOAD_CONST 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}'
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py3', 'py5')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_GLOBAL agent
+    LOAD_ATTR get_completion_status
+    LOAD_FAST state
+    CALL 
+    LOAD_GLOBAL agent
+    LOAD_ATTR CompletionStatus
+    LOAD_ATTR INCOMPLETE
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.get_completion_status\n}(%(py3)s)\n} == %(py11)s\n{%(py11)s = %(py9)s\n{%(py9)s = %(py7)s.CompletionStatus\n}.INCOMPLETE\n}',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py3', 'py5', 'py7', 'py9', 'py11')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py13)s'
+    LOAD_CONST 'py13'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_CONST None
+
+### test_failed_verification_revokes_pass args=('state', '@py_assert1', '@py_assert5', '@py_assert7', '@py_format8', '@py_assert4', '@py_assert6', '@py_format7')
+    LOAD_GLOBAL NULL + verified_state
+    CALL 
+    STORE_FAST state
+    LOAD_GLOBAL agent
+    LOAD_METHOD record_command_evidence
+    LOAD_FAST state
+    LOAD_GLOBAL agent
+    LOAD_METHOD CommandResult
+    LOAD_CONST 'pytest'
+    LOAD_CONST ''
+    LOAD_CONST ''
+    LOAD_CONST 1
+    CALL 
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL agent
+    LOAD_ATTR has_valid_evidence
+    LOAD_FAST state
+    LOAD_GLOBAL TESTS
+    CALL 
+    UNARY_NOT 
+    LOAD_CONST 'assert not %(py6)s\n{%(py6)s = %(py2)s\n{%(py2)s = %(py0)s.has_valid_evidence\n}(%(py3)s, %(py4)s)\n}'
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_CONST 'TESTS'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL TESTS
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL TESTS
+    CALL 
+    LOAD_CONST 'TESTS'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py3', 'py4', 'py6')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_GLOBAL agent
+    LOAD_ATTR is_task_complete
+    LOAD_FAST state
+    CALL 
+    UNARY_NOT 
+    LOAD_CONST 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}'
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py3', 'py5')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_CONST None
+
+### test_plain_git_diff_records_evidence args=('state', '@py_assert0', '@py_assert3', '@py_assert2', '@py_format5', '@py_format7')
+    LOAD_GLOBAL agent
+    LOAD_METHOD AgentState
+    LOAD_CONST 3
+    KW_NAMES 
+    CALL 
+    STORE_FAST state
+    LOAD_GLOBAL agent
+    LOAD_METHOD record_command_evidence
+    LOAD_FAST state
+    LOAD_GLOBAL agent
+    LOAD_METHOD CommandResult
+    LOAD_CONST 'git diff'
+    LOAD_CONST ''
+    LOAD_CONST ''
+    LOAD_CONST 0
+    CALL 
+    CALL 
+    POP_TOP 
+    LOAD_FAST state
+    LOAD_ATTR evidence
+    LOAD_GLOBAL agent
+    LOAD_ATTR EvidenceType
+    LOAD_ATTR DIFF_INSPECTED
+    BINARY_SUBSCR 
+    LOAD_CONST 3
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py1)s == %(py4)s',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py1', 'py4')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py6)s'
+    LOAD_CONST 'py6'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_CONST None
+
+### test_commands_detect_changes_even_on_failure args=('tmp_path', 'monkeypatch', 'outcome', 'state', 'command', '@py_assert1', '@py_assert4', '@py_assert3', '@py_format6', '@py_format8', '@py_assert5', '@py_assert7', '@py_assert6', '@py_format7')
+    MAKE_CELL tmp_path
+    MAKE_CELL outcome
+    LOAD_FAST monkeypatch
+    LOAD_METHOD setattr
+    LOAD_GLOBAL agent
+    LOAD_CONST 'WORKSPACE'
+    LOAD_DEREF tmp_path
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL NULL + verified_state
+    CALL 
+    STORE_FAST state
+    LOAD_CLOSURE outcome
+    LOAD_CLOSURE tmp_path
+    BUILD_TUPLE 
+    LOAD_CONST <code object command at 0x1066bca40, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 50>
+    MAKE_FUNCTION closure
+    STORE_FAST command
+    LOAD_FAST monkeypatch
+    LOAD_METHOD setattr
+    LOAD_GLOBAL agent
+    LOAD_CONST 'run_command'
+    LOAD_FAST command
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL agent
+    LOAD_METHOD execute_tool
+    LOAD_CONST 'run_command'
+    LOAD_CONST 'command'
+    LOAD_CONST 'pytest'
+    BUILD_MAP 
+    LOAD_FAST state
+    CALL 
+    POP_TOP 
+    LOAD_FAST state
+    LOAD_ATTR workspace_revision
+    LOAD_CONST 1
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.workspace_revision\n} == %(py5)s',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py5')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py7)s'
+    LOAD_CONST 'py7'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_GLOBAL agent
+    LOAD_ATTR has_valid_evidence
+    LOAD_FAST state
+    LOAD_GLOBAL TESTS
+    CALL 
+    UNARY_NOT 
+    LOAD_CONST 'assert not %(py6)s\n{%(py6)s = %(py2)s\n{%(py2)s = %(py0)s.has_valid_evidence\n}(%(py3)s, %(py4)s)\n}'
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_CONST 'TESTS'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL TESTS
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL TESTS
+    CALL 
+    LOAD_CONST 'TESTS'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py3', 'py4', 'py6')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_GLOBAL agent
+    LOAD_ATTR is_task_complete
+    LOAD_FAST state
+    CALL 
+    UNARY_NOT 
+    LOAD_CONST 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}'
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py3', 'py5')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_CONST None
+
+### test_command_without_changes args=('tmp_path', 'monkeypatch', 'outcome', 'state', '@py_assert1', '@py_assert4', '@py_assert3', '@py_format6', '@py_format8', '@py_assert9', '@py_assert8', '@py_assert6', '@py_format11', '@py_format13', '@py_format15')
+    MAKE_CELL result
+    LOAD_FAST monkeypatch
+    LOAD_METHOD setattr
+    LOAD_GLOBAL agent
+    LOAD_CONST 'WORKSPACE'
+    LOAD_FAST tmp_path
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL NULL + verified_state
+    CALL 
+    STORE_FAST state
+    LOAD_FAST outcome
+    LOAD_CONST 'timeout'
+    COMPARE_OP ==
+    LOAD_CONST 'Command timed out'
+    LOAD_GLOBAL agent
+    LOAD_METHOD CommandResult
+    LOAD_CONST 'pytest'
+    LOAD_CONST ''
+    LOAD_CONST ''
+    LOAD_FAST outcome
+    CALL 
+    STORE_DEREF result
+    LOAD_FAST monkeypatch
+    LOAD_METHOD setattr
+    LOAD_GLOBAL agent
+    LOAD_CONST 'run_command'
+    LOAD_CLOSURE result
+    BUILD_TUPLE 
+    LOAD_CONST <code object <lambda> at 0x1066c84b0, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 70>
+    MAKE_FUNCTION closure
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL agent
+    LOAD_METHOD execute_tool
+    LOAD_CONST 'run_command'
+    LOAD_CONST 'command'
+    LOAD_CONST 'pytest'
+    BUILD_MAP 
+    LOAD_FAST state
+    CALL 
+    POP_TOP 
+    LOAD_FAST state
+    LOAD_ATTR workspace_revision
+    LOAD_CONST 0
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.workspace_revision\n} == %(py5)s',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py5')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py7)s'
+    LOAD_CONST 'py7'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_GLOBAL agent
+    LOAD_ATTR is_task_complete
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 0
+    LOAD_FAST outcome
+    COMPARE_OP ==
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py7)s == %(py10)s',)
+    LOAD_FAST outcome
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'outcome'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST outcome
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST outcome
+    CALL 
+    LOAD_CONST 'outcome'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py7', 'py10')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n} == (%(py12)s)',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py3', 'py5', 'py12')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py14)s'
+    LOAD_CONST 'py14'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_CONST None
+
+### test_file_tools_only_increment_on_change args=('tmp_path', 'monkeypatch', 'state', 'args', '@py_assert1', '@py_assert4', '@py_assert3', '@py_format6', '@py_format8')
+    LOAD_FAST monkeypatch
+    LOAD_METHOD setattr
+    LOAD_GLOBAL agent
+    LOAD_CONST 'WORKSPACE'
+    LOAD_FAST tmp_path
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL agent
+    LOAD_METHOD AgentState
+    CALL 
+    STORE_FAST state
+    LOAD_CONST 'file.py'
+    LOAD_CONST 'hello'
+    LOAD_CONST ('path', 'content')
+    BUILD_CONST_KEY_MAP 
+    STORE_FAST args
+    LOAD_GLOBAL agent
+    LOAD_METHOD execute_tool
+    LOAD_CONST 'write_file'
+    LOAD_FAST args
+    LOAD_FAST state
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL agent
+    LOAD_METHOD execute_tool
+    LOAD_CONST 'write_file'
+    LOAD_FAST args
+    LOAD_FAST state
+    CALL 
+    POP_TOP 
+    LOAD_FAST state
+    LOAD_ATTR workspace_revision
+    LOAD_CONST 1
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.workspace_revision\n} == %(py5)s',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py5')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py7)s'
+    LOAD_CONST 'py7'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_CONST 'file.py'
+    LOAD_CONST 'hello'
+    LOAD_CONST 'world'
+    LOAD_CONST ('path', 'old_text', 'new_text')
+    BUILD_CONST_KEY_MAP 
+    STORE_FAST args
+    LOAD_GLOBAL agent
+    LOAD_METHOD execute_tool
+    LOAD_CONST 'replace_text'
+    LOAD_FAST args
+    LOAD_FAST state
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL agent
+    LOAD_METHOD execute_tool
+    LOAD_CONST 'replace_text'
+    LOAD_FAST args
+    LOAD_FAST state
+    CALL 
+    POP_TOP 
+    LOAD_FAST state
+    LOAD_ATTR workspace_revision
+    LOAD_CONST 2
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.workspace_revision\n} == %(py5)s',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py5')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py7)s'
+    LOAD_CONST 'py7'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_CONST None
+
+### test_snapshot_tracks_delete_mode_and_ignores_cache args=('tmp_path', 'monkeypatch', 'file', 'before', 'cache', '@py_assert1', '@py_assert3', '@py_assert5', '@py_format7', '@py_format9', '@py_assert6', '@py_format8', '@py_format10')
+    LOAD_FAST monkeypatch
+    LOAD_METHOD setattr
+    LOAD_GLOBAL agent
+    LOAD_CONST 'WORKSPACE'
+    LOAD_FAST tmp_path
+    CALL 
+    POP_TOP 
+    LOAD_FAST tmp_path
+    LOAD_CONST 'app.py'
+    BINARY_OP /
+    STORE_FAST file
+    LOAD_FAST file
+    LOAD_METHOD write_text
+    LOAD_CONST 'hello'
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL agent
+    LOAD_METHOD snapshot_workspace
+    CALL 
+    STORE_FAST before
+    LOAD_FAST tmp_path
+    LOAD_CONST '__pycache__'
+    BINARY_OP /
+    STORE_FAST cache
+    LOAD_FAST cache
+    LOAD_METHOD mkdir
+    CALL 
+    POP_TOP 
+    LOAD_FAST cache
+    LOAD_CONST 'app.pyc'
+    BINARY_OP /
+    LOAD_METHOD write_bytes
+    LOAD_CONST b'cache'
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL agent
+    LOAD_ATTR snapshot_workspace
+    CALL 
+    LOAD_FAST before
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py4)s\n{%(py4)s = %(py2)s\n{%(py2)s = %(py0)s.snapshot_workspace\n}()\n} == %(py6)s',)
+    LOAD_FAST before
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'before'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST before
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST before
+    CALL 
+    LOAD_CONST 'before'
+    LOAD_CONST ('py0', 'py2', 'py4', 'py6')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py8)s'
+    LOAD_CONST 'py8'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_FAST file
+    LOAD_METHOD chmod
+    LOAD_CONST 493
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL agent
+    LOAD_ATTR snapshot_workspace
+    CALL 
+    LOAD_FAST before
+    COMPARE_OP !=
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('!=',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py4)s\n{%(py4)s = %(py2)s\n{%(py2)s = %(py0)s.snapshot_workspace\n}()\n} != %(py6)s',)
+    LOAD_FAST before
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'before'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST before
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST before
+    CALL 
+    LOAD_CONST 'before'
+    LOAD_CONST ('py0', 'py2', 'py4', 'py6')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py8)s'
+    LOAD_CONST 'py8'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_FAST file
+    LOAD_METHOD unlink
+    CALL 
+    POP_TOP 
+    LOAD_GLOBAL agent
+    LOAD_ATTR snapshot_workspace
+    CALL 
+    BUILD_MAP 
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py4)s\n{%(py4)s = %(py2)s\n{%(py2)s = %(py0)s.snapshot_workspace\n}()\n} == %(py7)s',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py4', 'py7')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py9)s'
+    LOAD_CONST 'py9'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_CONST None
+
+### test_invalidate_uses_dictionary_and_reopens_tasks args=('state', '@py_assert1', '@py_assert4', '@py_assert3', '@py_format6', '@py_format8', '@py_assert6', '@py_format7')
+    LOAD_GLOBAL NULL + verified_state
+    CALL 
+    STORE_FAST state
+    LOAD_GLOBAL agent
+    LOAD_METHOD invalidate_evidence
+    LOAD_FAST state
+    CALL 
+    POP_TOP 
+    LOAD_FAST state
+    LOAD_ATTR evidence
+    BUILD_MAP 
+    COMPARE_OP ==
+    LOAD_ATTR _call_reprcompare
+    LOAD_CONST ('==',)
+    BUILD_TUPLE 
+    LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.evidence\n} == %(py5)s',)
+    BUILD_TUPLE 
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py5')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_CONST 'assert %(py7)s'
+    LOAD_CONST 'py7'
+    BUILD_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_GLOBAL agent
+    LOAD_ATTR is_task_complete
+    LOAD_FAST state
+    CALL 
+    UNARY_NOT 
+    LOAD_CONST 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}'
+    LOAD_CONST 'agent'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_GLOBAL agent
+    CALL 
+    LOAD_CONST 'agent'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR locals
+    CALL 
+    CONTAINS_OP 
+    LOAD_ATTR _should_repr_global_name
+    LOAD_FAST state
+    CALL 
+    LOAD_ATTR _saferepr
+    LOAD_FAST state
+    CALL 
+    LOAD_CONST 'state'
+    LOAD_ATTR _saferepr
+    CALL 
+    LOAD_CONST ('py0', 'py2', 'py3', 'py5')
+    BUILD_CONST_KEY_MAP 
+    BINARY_OP %
+    LOAD_GLOBAL NULL + AssertionError
+    LOAD_ATTR _format_explanation
+    CALL 
+    CALL 
+    RAISE_VARARGS 
+    LOAD_CONST None
+    LOAD_CONST None

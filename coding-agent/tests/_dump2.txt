@@ -1,0 +1,2393 @@
+### MODULE
+2 LOAD_CONST 0
+4 LOAD_CONST None
+6 IMPORT_NAME builtins
+8 STORE_NAME @py_builtins
+10 LOAD_CONST 0
+12 LOAD_CONST None
+14 IMPORT_NAME _pytest.assertion.rewrite
+16 IMPORT_FROM assertion
+22 IMPORT_FROM rewrite
+24 STORE_NAME @pytest_ar
+28 LOAD_CONST 0
+30 LOAD_CONST None
+32 IMPORT_NAME importlib
+34 STORE_NAME importlib
+36 LOAD_CONST 0
+38 LOAD_CONST None
+40 IMPORT_NAME pytest
+42 STORE_NAME pytest
+46 LOAD_NAME importlib
+58 LOAD_CONST 'coding_agent.main'
+60 PRECALL 
+64 CALL 
+74 STORE_NAME agent
+76 LOAD_NAME agent
+98 STORE_NAME TESTS
+100 LOAD_CONST <code object verified_state at 0x10ac38760, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 9>
+104 STORE_NAME verified_state
+106 LOAD_CONST <code object test_edit_reopens_completed_verification at 0x756948000, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 17>
+110 STORE_NAME test_edit_reopens_completed_verification
+112 LOAD_CONST <code object test_completion_rechecks_stale_evidence at 0x757359500, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 26>
+116 STORE_NAME test_completion_rechecks_stale_evidence
+118 LOAD_CONST <code object test_failed_verification_revokes_pass at 0x75739c000, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 33>
+122 STORE_NAME test_failed_verification_revokes_pass
+124 LOAD_CONST <code object test_plain_git_diff_records_evidence at 0x756982400, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 40>
+128 STORE_NAME test_plain_git_diff_records_evidence
+130 LOAD_NAME pytest
+164 LOAD_CONST 'outcome'
+168 LOAD_CONST (0, 1, 'timeout', 'exception')
+172 PRECALL 
+176 CALL 
+186 LOAD_CONST <code object test_commands_detect_changes_even_on_failure at 0x757360800, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 46>
+190 PRECALL 
+194 CALL 
+204 STORE_NAME test_commands_detect_changes_even_on_failure
+206 LOAD_NAME pytest
+240 LOAD_CONST 'outcome'
+244 LOAD_CONST (0, 1, 'timeout')
+248 PRECALL 
+252 CALL 
+262 LOAD_CONST <code object test_command_without_changes at 0x757307100, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 64>
+266 PRECALL 
+270 CALL 
+280 STORE_NAME test_command_without_changes
+282 LOAD_CONST <code object test_file_tools_only_increment_on_change at 0x75739cc00, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 76>
+286 STORE_NAME test_file_tools_only_increment_on_change
+288 LOAD_CONST <code object test_snapshot_tracks_delete_mode_and_ignores_cache at 0x757352800, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 89>
+292 STORE_NAME test_snapshot_tracks_delete_mode_and_ignores_cache
+294 LOAD_CONST <code object test_invalidate_uses_dictionary_and_reopens_tasks at 0x757399400, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 104>
+298 STORE_NAME test_invalidate_uses_dictionary_and_reopens_tasks
+300 LOAD_CONST None
+
+### FUNC verified_state
+0 RESUME 
+2 LOAD_GLOBAL agent
+14 LOAD_METHOD AgentState
+36 LOAD_GLOBAL agent
+48 LOAD_METHOD TodoItem
+70 LOAD_CONST 1
+72 LOAD_CONST 'Run tests'
+74 LOAD_GLOBAL agent
+86 LOAD_ATTR TaskStatus
+96 LOAD_ATTR COMPLETED
+106 LOAD_GLOBAL TESTS
+118 KW_NAMES 
+120 PRECALL 
+124 CALL 
+134 BUILD_LIST 
+136 LOAD_GLOBAL TESTS
+148 LOAD_CONST 0
+150 BUILD_MAP 
+152 KW_NAMES 
+154 PRECALL 
+158 CALL 
+168 RETURN_VALUE 
+
+### FUNC test_edit_reopens_completed_verification
+0 RESUME 
+2 LOAD_GLOBAL NULL + verified_state
+14 PRECALL 
+18 CALL 
+28 STORE_FAST state
+30 LOAD_GLOBAL agent
+42 LOAD_METHOD mark_workspace_changed
+64 LOAD_FAST state
+66 PRECALL 
+70 CALL 
+80 POP_TOP 
+82 LOAD_FAST state
+84 LOAD_ATTR workspace_revision
+94 STORE_FAST @py_assert1
+96 LOAD_CONST 1
+98 STORE_FAST @py_assert4
+100 LOAD_FAST @py_assert1
+102 LOAD_FAST @py_assert4
+104 COMPARE_OP ==
+110 STORE_FAST @py_assert3
+112 LOAD_FAST @py_assert3
+114 POP_JUMP_FORWARD_IF_TRUE to 456
+116 LOAD_GLOBAL NULL + @pytest_ar
+128 LOAD_ATTR _call_reprcompare
+138 LOAD_CONST ('==',)
+140 LOAD_FAST @py_assert3
+142 BUILD_TUPLE 
+144 LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.workspace_revision\n} == %(py5)s',)
+146 LOAD_FAST @py_assert1
+148 LOAD_FAST @py_assert4
+150 BUILD_TUPLE 
+152 PRECALL 
+156 CALL 
+166 LOAD_CONST 'state'
+168 LOAD_GLOBAL NULL + @py_builtins
+180 LOAD_ATTR locals
+190 PRECALL 
+194 CALL 
+204 CONTAINS_OP 
+206 POP_JUMP_FORWARD_IF_TRUE to 248
+208 LOAD_GLOBAL NULL + @pytest_ar
+220 LOAD_ATTR _should_repr_global_name
+230 LOAD_FAST state
+232 PRECALL 
+236 CALL 
+246 POP_JUMP_FORWARD_IF_FALSE to 288
+248 LOAD_GLOBAL NULL + @pytest_ar
+260 LOAD_ATTR _saferepr
+270 LOAD_FAST state
+272 PRECALL 
+276 CALL 
+286 JUMP_FORWARD to 290
+288 LOAD_CONST 'state'
+290 LOAD_GLOBAL NULL + @pytest_ar
+302 LOAD_ATTR _saferepr
+312 LOAD_FAST @py_assert1
+314 PRECALL 
+318 CALL 
+328 LOAD_GLOBAL NULL + @pytest_ar
+340 LOAD_ATTR _saferepr
+350 LOAD_FAST @py_assert4
+352 PRECALL 
+356 CALL 
+366 LOAD_CONST ('py0', 'py2', 'py5')
+368 BUILD_CONST_KEY_MAP 
+370 BINARY_OP %
+374 STORE_FAST @py_format6
+376 LOAD_CONST 'assert %(py7)s'
+378 LOAD_CONST 'py7'
+380 LOAD_FAST @py_format6
+382 BUILD_MAP 
+384 BINARY_OP %
+388 STORE_FAST @py_format8
+390 LOAD_GLOBAL NULL + AssertionError
+402 LOAD_GLOBAL NULL + @pytest_ar
+414 LOAD_ATTR _format_explanation
+424 LOAD_FAST @py_format8
+426 PRECALL 
+430 CALL 
+440 PRECALL 
+444 CALL 
+454 RAISE_VARARGS 
+456 LOAD_CONST None
+458 COPY 
+460 STORE_FAST @py_assert1
+462 COPY 
+464 STORE_FAST @py_assert3
+466 STORE_FAST @py_assert4
+468 LOAD_GLOBAL agent
+480 LOAD_ATTR has_valid_evidence
+490 STORE_FAST @py_assert1
+492 PUSH_NULL 
+494 LOAD_FAST @py_assert1
+496 LOAD_FAST state
+498 LOAD_GLOBAL TESTS
+510 PRECALL 
+514 CALL 
+524 STORE_FAST @py_assert5
+526 LOAD_FAST @py_assert5
+528 UNARY_NOT 
+530 STORE_FAST @py_assert7
+532 LOAD_FAST @py_assert7
+534 EXTENDED_ARG 
+536 POP_JUMP_FORWARD_IF_TRUE to 1104
+538 LOAD_CONST 'assert not %(py6)s\n{%(py6)s = %(py2)s\n{%(py2)s = %(py0)s.has_valid_evidence\n}(%(py3)s, %(py4)s)\n}'
+540 LOAD_CONST 'agent'
+542 LOAD_GLOBAL NULL + @py_builtins
+554 LOAD_ATTR locals
+564 PRECALL 
+568 CALL 
+578 CONTAINS_OP 
+580 POP_JUMP_FORWARD_IF_TRUE to 632
+582 LOAD_GLOBAL NULL + @pytest_ar
+594 LOAD_ATTR _should_repr_global_name
+604 LOAD_GLOBAL agent
+616 PRECALL 
+620 CALL 
+630 POP_JUMP_FORWARD_IF_FALSE to 682
+632 LOAD_GLOBAL NULL + @pytest_ar
+644 LOAD_ATTR _saferepr
+654 LOAD_GLOBAL agent
+666 PRECALL 
+670 CALL 
+680 JUMP_FORWARD to 684
+682 LOAD_CONST 'agent'
+684 LOAD_GLOBAL NULL + @pytest_ar
+696 LOAD_ATTR _saferepr
+706 LOAD_FAST @py_assert1
+708 PRECALL 
+712 CALL 
+722 LOAD_CONST 'state'
+724 LOAD_GLOBAL NULL + @py_builtins
+736 LOAD_ATTR locals
+746 PRECALL 
+750 CALL 
+760 CONTAINS_OP 
+762 POP_JUMP_FORWARD_IF_TRUE to 804
+764 LOAD_GLOBAL NULL + @pytest_ar
+776 LOAD_ATTR _should_repr_global_name
+786 LOAD_FAST state
+788 PRECALL 
+792 CALL 
+802 POP_JUMP_FORWARD_IF_FALSE to 844
+804 LOAD_GLOBAL NULL + @pytest_ar
+816 LOAD_ATTR _saferepr
+826 LOAD_FAST state
+828 PRECALL 
+832 CALL 
+842 JUMP_FORWARD to 846
+844 LOAD_CONST 'state'
+846 LOAD_CONST 'TESTS'
+848 LOAD_GLOBAL NULL + @py_builtins
+860 LOAD_ATTR locals
+870 PRECALL 
+874 CALL 
+884 CONTAINS_OP 
+886 POP_JUMP_FORWARD_IF_TRUE to 938
+888 LOAD_GLOBAL NULL + @pytest_ar
+900 LOAD_ATTR _should_repr_global_name
+910 LOAD_GLOBAL TESTS
+922 PRECALL 
+926 CALL 
+936 POP_JUMP_FORWARD_IF_FALSE to 988
+938 LOAD_GLOBAL NULL + @pytest_ar
+950 LOAD_ATTR _saferepr
+960 LOAD_GLOBAL TESTS
+972 PRECALL 
+976 CALL 
+986 JUMP_FORWARD to 990
+988 LOAD_CONST 'TESTS'
+990 LOAD_GLOBAL NULL + @pytest_ar
+1002 LOAD_ATTR _saferepr
+1012 LOAD_FAST @py_assert5
+1014 PRECALL 
+1018 CALL 
+1028 LOAD_CONST ('py0', 'py2', 'py3', 'py4', 'py6')
+1030 BUILD_CONST_KEY_MAP 
+1032 BINARY_OP %
+1036 STORE_FAST @py_format8
+1038 LOAD_GLOBAL NULL + AssertionError
+1050 LOAD_GLOBAL NULL + @pytest_ar
+1062 LOAD_ATTR _format_explanation
+1072 LOAD_FAST @py_format8
+1074 PRECALL 
+1078 CALL 
+1088 PRECALL 
+1092 CALL 
+1102 RAISE_VARARGS 
+1104 LOAD_CONST None
+1106 COPY 
+1108 STORE_FAST @py_assert1
+1110 COPY 
+1112 STORE_FAST @py_assert5
+1114 STORE_FAST @py_assert7
+1116 LOAD_FAST state
+1118 LOAD_ATTR todos
+1128 LOAD_CONST 0
+1130 BINARY_SUBSCR 
+1140 STORE_FAST @py_assert0
+1142 LOAD_FAST @py_assert0
+1144 LOAD_ATTR status
+1154 STORE_FAST @py_assert2
+1156 LOAD_GLOBAL agent
+1168 LOAD_ATTR TaskStatus
+1178 STORE_FAST @py_assert6
+1180 LOAD_FAST @py_assert6
+1182 LOAD_ATTR PENDING
+1192 STORE_FAST @py_assert8
+1194 LOAD_FAST @py_assert2
+1196 LOAD_FAST @py_assert8
+1198 COMPARE_OP ==
+1204 STORE_FAST @py_assert4
+1206 LOAD_FAST @py_assert4
+1208 POP_JUMP_FORWARD_IF_TRUE to 1646
+1210 LOAD_GLOBAL NULL + @pytest_ar
+1222 LOAD_ATTR _call_reprcompare
+1232 LOAD_CONST ('==',)
+1234 LOAD_FAST @py_assert4
+1236 BUILD_TUPLE 
+1238 LOAD_CONST ('%(py3)s\n{%(py3)s = %(py1)s.status\n} == %(py9)s\n{%(py9)s = %(py7)s\n{%(py7)s = %(py5)s.TaskStatus\n}.PENDING\n}',)
+1240 LOAD_FAST @py_assert2
+1242 LOAD_FAST @py_assert8
+1244 BUILD_TUPLE 
+1246 PRECALL 
+1250 CALL 
+1260 LOAD_GLOBAL NULL + @pytest_ar
+1272 LOAD_ATTR _saferepr
+1282 LOAD_FAST @py_assert0
+1284 PRECALL 
+1288 CALL 
+1298 LOAD_GLOBAL NULL + @pytest_ar
+1310 LOAD_ATTR _saferepr
+1320 LOAD_FAST @py_assert2
+1322 PRECALL 
+1326 CALL 
+1336 LOAD_CONST 'agent'
+1338 LOAD_GLOBAL NULL + @py_builtins
+1350 LOAD_ATTR locals
+1360 PRECALL 
+1364 CALL 
+1374 CONTAINS_OP 
+1376 POP_JUMP_FORWARD_IF_TRUE to 1428
+1378 LOAD_GLOBAL NULL + @pytest_ar
+1390 LOAD_ATTR _should_repr_global_name
+1400 LOAD_GLOBAL agent
+1412 PRECALL 
+1416 CALL 
+1426 POP_JUMP_FORWARD_IF_FALSE to 1478
+1428 LOAD_GLOBAL NULL + @pytest_ar
+1440 LOAD_ATTR _saferepr
+1450 LOAD_GLOBAL agent
+1462 PRECALL 
+1466 CALL 
+1476 JUMP_FORWARD to 1480
+1478 LOAD_CONST 'agent'
+1480 LOAD_GLOBAL NULL + @pytest_ar
+1492 LOAD_ATTR _saferepr
+1502 LOAD_FAST @py_assert6
+1504 PRECALL 
+1508 CALL 
+1518 LOAD_GLOBAL NULL + @pytest_ar
+1530 LOAD_ATTR _saferepr
+1540 LOAD_FAST @py_assert8
+1542 PRECALL 
+1546 CALL 
+1556 LOAD_CONST ('py1', 'py3', 'py5', 'py7', 'py9')
+1558 BUILD_CONST_KEY_MAP 
+1560 BINARY_OP %
+1564 STORE_FAST @py_format10
+1566 LOAD_CONST 'assert %(py11)s'
+1568 LOAD_CONST 'py11'
+1570 LOAD_FAST @py_format10
+1572 BUILD_MAP 
+1574 BINARY_OP %
+1578 STORE_FAST @py_format12
+1580 LOAD_GLOBAL NULL + AssertionError
+1592 LOAD_GLOBAL NULL + @pytest_ar
+1604 LOAD_ATTR _format_explanation
+1614 LOAD_FAST @py_format12
+1616 PRECALL 
+1620 CALL 
+1630 PRECALL 
+1634 CALL 
+1644 RAISE_VARARGS 
+1646 LOAD_CONST None
+1648 COPY 
+1650 STORE_FAST @py_assert0
+1652 COPY 
+1654 STORE_FAST @py_assert2
+1656 COPY 
+1658 STORE_FAST @py_assert4
+1660 COPY 
+1662 STORE_FAST @py_assert6
+1664 STORE_FAST @py_assert8
+1666 LOAD_GLOBAL agent
+1678 LOAD_ATTR get_completion_status
+1688 STORE_FAST @py_assert1
+1690 PUSH_NULL 
+1692 LOAD_FAST @py_assert1
+1694 LOAD_FAST state
+1696 PRECALL 
+1700 CALL 
+1710 STORE_FAST @py_assert4
+1712 LOAD_GLOBAL agent
+1724 LOAD_ATTR CompletionStatus
+1734 STORE_FAST @py_assert8
+1736 LOAD_FAST @py_assert8
+1738 LOAD_ATTR INCOMPLETE
+1748 STORE_FAST @py_assert10
+1750 LOAD_FAST @py_assert4
+1752 LOAD_FAST @py_assert10
+1754 COMPARE_OP ==
+1760 STORE_FAST @py_assert6
+1762 LOAD_FAST @py_assert6
+1764 EXTENDED_ARG 
+1766 POP_JUMP_FORWARD_IF_TRUE to 2472
+1768 LOAD_GLOBAL NULL + @pytest_ar
+1780 LOAD_ATTR _call_reprcompare
+1790 LOAD_CONST ('==',)
+1792 LOAD_FAST @py_assert6
+1794 BUILD_TUPLE 
+1796 LOAD_CONST ('%(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.get_completion_status\n}(%(py3)s)\n} == %(py11)s\n{%(py11)s = %(py9)s\n{%(py9)s = %(py7)s.CompletionStatus\n}.INCOMPLETE\n}',)
+1798 LOAD_FAST @py_assert4
+1800 LOAD_FAST @py_assert10
+1802 BUILD_TUPLE 
+1804 PRECALL 
+1808 CALL 
+1818 LOAD_CONST 'agent'
+1820 LOAD_GLOBAL NULL + @py_builtins
+1832 LOAD_ATTR locals
+1842 PRECALL 
+1846 CALL 
+1856 CONTAINS_OP 
+1858 POP_JUMP_FORWARD_IF_TRUE to 1910
+1860 LOAD_GLOBAL NULL + @pytest_ar
+1872 LOAD_ATTR _should_repr_global_name
+1882 LOAD_GLOBAL agent
+1894 PRECALL 
+1898 CALL 
+1908 POP_JUMP_FORWARD_IF_FALSE to 1960
+1910 LOAD_GLOBAL NULL + @pytest_ar
+1922 LOAD_ATTR _saferepr
+1932 LOAD_GLOBAL agent
+1944 PRECALL 
+1948 CALL 
+1958 JUMP_FORWARD to 1962
+1960 LOAD_CONST 'agent'
+1962 LOAD_GLOBAL NULL + @pytest_ar
+1974 LOAD_ATTR _saferepr
+1984 LOAD_FAST @py_assert1
+1986 PRECALL 
+1990 CALL 
+2000 LOAD_CONST 'state'
+2002 LOAD_GLOBAL NULL + @py_builtins
+2014 LOAD_ATTR locals
+2024 PRECALL 
+2028 CALL 
+2038 CONTAINS_OP 
+2040 POP_JUMP_FORWARD_IF_TRUE to 2082
+2042 LOAD_GLOBAL NULL + @pytest_ar
+2054 LOAD_ATTR _should_repr_global_name
+2064 LOAD_FAST state
+2066 PRECALL 
+2070 CALL 
+2080 POP_JUMP_FORWARD_IF_FALSE to 2122
+2082 LOAD_GLOBAL NULL + @pytest_ar
+2094 LOAD_ATTR _saferepr
+2104 LOAD_FAST state
+2106 PRECALL 
+2110 CALL 
+2120 JUMP_FORWARD to 2124
+2122 LOAD_CONST 'state'
+2124 LOAD_GLOBAL NULL + @pytest_ar
+2136 LOAD_ATTR _saferepr
+2146 LOAD_FAST @py_assert4
+2148 PRECALL 
+2152 CALL 
+2162 LOAD_CONST 'agent'
+2164 LOAD_GLOBAL NULL + @py_builtins
+2176 LOAD_ATTR locals
+2186 PRECALL 
+2190 CALL 
+2200 CONTAINS_OP 
+2202 POP_JUMP_FORWARD_IF_TRUE to 2254
+2204 LOAD_GLOBAL NULL + @pytest_ar
+2216 LOAD_ATTR _should_repr_global_name
+2226 LOAD_GLOBAL agent
+2238 PRECALL 
+2242 CALL 
+2252 POP_JUMP_FORWARD_IF_FALSE to 2304
+2254 LOAD_GLOBAL NULL + @pytest_ar
+2266 LOAD_ATTR _saferepr
+2276 LOAD_GLOBAL agent
+2288 PRECALL 
+2292 CALL 
+2302 JUMP_FORWARD to 2306
+2304 LOAD_CONST 'agent'
+2306 LOAD_GLOBAL NULL + @pytest_ar
+2318 LOAD_ATTR _saferepr
+2328 LOAD_FAST @py_assert8
+2330 PRECALL 
+2334 CALL 
+2344 LOAD_GLOBAL NULL + @pytest_ar
+2356 LOAD_ATTR _saferepr
+2366 LOAD_FAST @py_assert10
+2368 PRECALL 
+2372 CALL 
+2382 LOAD_CONST ('py0', 'py2', 'py3', 'py5', 'py7', 'py9', 'py11')
+2384 BUILD_CONST_KEY_MAP 
+2386 BINARY_OP %
+2390 STORE_FAST @py_format12
+2392 LOAD_CONST 'assert %(py13)s'
+2394 LOAD_CONST 'py13'
+2396 LOAD_FAST @py_format12
+2398 BUILD_MAP 
+2400 BINARY_OP %
+2404 STORE_FAST @py_format14
+2406 LOAD_GLOBAL NULL + AssertionError
+2418 LOAD_GLOBAL NULL + @pytest_ar
+2430 LOAD_ATTR _format_explanation
+2440 LOAD_FAST @py_format14
+2442 PRECALL 
+2446 CALL 
+2456 PRECALL 
+2460 CALL 
+2470 RAISE_VARARGS 
+2472 LOAD_CONST None
+2474 COPY 
+2476 STORE_FAST @py_assert1
+2478 COPY 
+2480 STORE_FAST @py_assert4
+2482 COPY 
+2484 STORE_FAST @py_assert6
+2486 COPY 
+2488 STORE_FAST @py_assert8
+2490 STORE_FAST @py_assert10
+2492 LOAD_CONST None
+2494 RETURN_VALUE 
+
+### FUNC test_completion_rechecks_stale_evidence
+0 RESUME 
+2 LOAD_GLOBAL NULL + verified_state
+14 PRECALL 
+18 CALL 
+28 STORE_FAST state
+30 LOAD_CONST 1
+32 LOAD_FAST state
+34 STORE_ATTR workspace_revision
+44 LOAD_GLOBAL agent
+56 LOAD_ATTR is_task_complete
+66 STORE_FAST @py_assert1
+68 PUSH_NULL 
+70 LOAD_FAST @py_assert1
+72 LOAD_FAST state
+74 PRECALL 
+78 CALL 
+88 STORE_FAST @py_assert4
+90 LOAD_FAST @py_assert4
+92 UNARY_NOT 
+94 STORE_FAST @py_assert6
+96 LOAD_FAST @py_assert6
+98 POP_JUMP_FORWARD_IF_TRUE to 522
+100 LOAD_CONST 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}'
+102 LOAD_CONST 'agent'
+104 LOAD_GLOBAL NULL + @py_builtins
+116 LOAD_ATTR locals
+126 PRECALL 
+130 CALL 
+140 CONTAINS_OP 
+142 POP_JUMP_FORWARD_IF_TRUE to 194
+144 LOAD_GLOBAL NULL + @pytest_ar
+156 LOAD_ATTR _should_repr_global_name
+166 LOAD_GLOBAL agent
+178 PRECALL 
+182 CALL 
+192 POP_JUMP_FORWARD_IF_FALSE to 244
+194 LOAD_GLOBAL NULL + @pytest_ar
+206 LOAD_ATTR _saferepr
+216 LOAD_GLOBAL agent
+228 PRECALL 
+232 CALL 
+242 JUMP_FORWARD to 246
+244 LOAD_CONST 'agent'
+246 LOAD_GLOBAL NULL + @pytest_ar
+258 LOAD_ATTR _saferepr
+268 LOAD_FAST @py_assert1
+270 PRECALL 
+274 CALL 
+284 LOAD_CONST 'state'
+286 LOAD_GLOBAL NULL + @py_builtins
+298 LOAD_ATTR locals
+308 PRECALL 
+312 CALL 
+322 CONTAINS_OP 
+324 POP_JUMP_FORWARD_IF_TRUE to 366
+326 LOAD_GLOBAL NULL + @pytest_ar
+338 LOAD_ATTR _should_repr_global_name
+348 LOAD_FAST state
+350 PRECALL 
+354 CALL 
+364 POP_JUMP_FORWARD_IF_FALSE to 406
+366 LOAD_GLOBAL NULL + @pytest_ar
+378 LOAD_ATTR _saferepr
+388 LOAD_FAST state
+390 PRECALL 
+394 CALL 
+404 JUMP_FORWARD to 408
+406 LOAD_CONST 'state'
+408 LOAD_GLOBAL NULL + @pytest_ar
+420 LOAD_ATTR _saferepr
+430 LOAD_FAST @py_assert4
+432 PRECALL 
+436 CALL 
+446 LOAD_CONST ('py0', 'py2', 'py3', 'py5')
+448 BUILD_CONST_KEY_MAP 
+450 BINARY_OP %
+454 STORE_FAST @py_format7
+456 LOAD_GLOBAL NULL + AssertionError
+468 LOAD_GLOBAL NULL + @pytest_ar
+480 LOAD_ATTR _format_explanation
+490 LOAD_FAST @py_format7
+492 PRECALL 
+496 CALL 
+506 PRECALL 
+510 CALL 
+520 RAISE_VARARGS 
+522 LOAD_CONST None
+524 COPY 
+526 STORE_FAST @py_assert1
+528 COPY 
+530 STORE_FAST @py_assert4
+532 STORE_FAST @py_assert6
+534 LOAD_GLOBAL agent
+546 LOAD_ATTR get_completion_status
+556 STORE_FAST @py_assert1
+558 PUSH_NULL 
+560 LOAD_FAST @py_assert1
+562 LOAD_FAST state
+564 PRECALL 
+568 CALL 
+578 STORE_FAST @py_assert4
+580 LOAD_GLOBAL agent
+592 LOAD_ATTR CompletionStatus
+602 STORE_FAST @py_assert8
+604 LOAD_FAST @py_assert8
+606 LOAD_ATTR INCOMPLETE
+616 STORE_FAST @py_assert10
+618 LOAD_FAST @py_assert4
+620 LOAD_FAST @py_assert10
+622 COMPARE_OP ==
+628 STORE_FAST @py_assert6
+630 LOAD_FAST @py_assert6
+632 EXTENDED_ARG 
+634 POP_JUMP_FORWARD_IF_TRUE to 1340
+636 LOAD_GLOBAL NULL + @pytest_ar
+648 LOAD_ATTR _call_reprcompare
+658 LOAD_CONST ('==',)
+660 LOAD_FAST @py_assert6
+662 BUILD_TUPLE 
+664 LOAD_CONST ('%(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.get_completion_status\n}(%(py3)s)\n} == %(py11)s\n{%(py11)s = %(py9)s\n{%(py9)s = %(py7)s.CompletionStatus\n}.INCOMPLETE\n}',)
+666 LOAD_FAST @py_assert4
+668 LOAD_FAST @py_assert10
+670 BUILD_TUPLE 
+672 PRECALL 
+676 CALL 
+686 LOAD_CONST 'agent'
+688 LOAD_GLOBAL NULL + @py_builtins
+700 LOAD_ATTR locals
+710 PRECALL 
+714 CALL 
+724 CONTAINS_OP 
+726 POP_JUMP_FORWARD_IF_TRUE to 778
+728 LOAD_GLOBAL NULL + @pytest_ar
+740 LOAD_ATTR _should_repr_global_name
+750 LOAD_GLOBAL agent
+762 PRECALL 
+766 CALL 
+776 POP_JUMP_FORWARD_IF_FALSE to 828
+778 LOAD_GLOBAL NULL + @pytest_ar
+790 LOAD_ATTR _saferepr
+800 LOAD_GLOBAL agent
+812 PRECALL 
+816 CALL 
+826 JUMP_FORWARD to 830
+828 LOAD_CONST 'agent'
+830 LOAD_GLOBAL NULL + @pytest_ar
+842 LOAD_ATTR _saferepr
+852 LOAD_FAST @py_assert1
+854 PRECALL 
+858 CALL 
+868 LOAD_CONST 'state'
+870 LOAD_GLOBAL NULL + @py_builtins
+882 LOAD_ATTR locals
+892 PRECALL 
+896 CALL 
+906 CONTAINS_OP 
+908 POP_JUMP_FORWARD_IF_TRUE to 950
+910 LOAD_GLOBAL NULL + @pytest_ar
+922 LOAD_ATTR _should_repr_global_name
+932 LOAD_FAST state
+934 PRECALL 
+938 CALL 
+948 POP_JUMP_FORWARD_IF_FALSE to 990
+950 LOAD_GLOBAL NULL + @pytest_ar
+962 LOAD_ATTR _saferepr
+972 LOAD_FAST state
+974 PRECALL 
+978 CALL 
+988 JUMP_FORWARD to 992
+990 LOAD_CONST 'state'
+992 LOAD_GLOBAL NULL + @pytest_ar
+1004 LOAD_ATTR _saferepr
+1014 LOAD_FAST @py_assert4
+1016 PRECALL 
+1020 CALL 
+1030 LOAD_CONST 'agent'
+1032 LOAD_GLOBAL NULL + @py_builtins
+1044 LOAD_ATTR locals
+1054 PRECALL 
+1058 CALL 
+1068 CONTAINS_OP 
+1070 POP_JUMP_FORWARD_IF_TRUE to 1122
+1072 LOAD_GLOBAL NULL + @pytest_ar
+1084 LOAD_ATTR _should_repr_global_name
+1094 LOAD_GLOBAL agent
+1106 PRECALL 
+1110 CALL 
+1120 POP_JUMP_FORWARD_IF_FALSE to 1172
+1122 LOAD_GLOBAL NULL + @pytest_ar
+1134 LOAD_ATTR _saferepr
+1144 LOAD_GLOBAL agent
+1156 PRECALL 
+1160 CALL 
+1170 JUMP_FORWARD to 1174
+1172 LOAD_CONST 'agent'
+1174 LOAD_GLOBAL NULL + @pytest_ar
+1186 LOAD_ATTR _saferepr
+1196 LOAD_FAST @py_assert8
+1198 PRECALL 
+1202 CALL 
+1212 LOAD_GLOBAL NULL + @pytest_ar
+1224 LOAD_ATTR _saferepr
+1234 LOAD_FAST @py_assert10
+1236 PRECALL 
+1240 CALL 
+1250 LOAD_CONST ('py0', 'py2', 'py3', 'py5', 'py7', 'py9', 'py11')
+1252 BUILD_CONST_KEY_MAP 
+1254 BINARY_OP %
+1258 STORE_FAST @py_format12
+1260 LOAD_CONST 'assert %(py13)s'
+1262 LOAD_CONST 'py13'
+1264 LOAD_FAST @py_format12
+1266 BUILD_MAP 
+1268 BINARY_OP %
+1272 STORE_FAST @py_format14
+1274 LOAD_GLOBAL NULL + AssertionError
+1286 LOAD_GLOBAL NULL + @pytest_ar
+1298 LOAD_ATTR _format_explanation
+1308 LOAD_FAST @py_format14
+1310 PRECALL 
+1314 CALL 
+1324 PRECALL 
+1328 CALL 
+1338 RAISE_VARARGS 
+1340 LOAD_CONST None
+1342 COPY 
+1344 STORE_FAST @py_assert1
+1346 COPY 
+1348 STORE_FAST @py_assert4
+1350 COPY 
+1352 STORE_FAST @py_assert6
+1354 COPY 
+1356 STORE_FAST @py_assert8
+1358 STORE_FAST @py_assert10
+1360 LOAD_CONST None
+1362 RETURN_VALUE 
+
+### FUNC test_failed_verification_revokes_pass
+0 RESUME 
+2 LOAD_GLOBAL NULL + verified_state
+14 PRECALL 
+18 CALL 
+28 STORE_FAST state
+30 LOAD_GLOBAL agent
+42 LOAD_METHOD record_command_evidence
+64 LOAD_FAST state
+66 LOAD_GLOBAL agent
+78 LOAD_METHOD CommandResult
+100 LOAD_CONST 'pytest'
+102 LOAD_CONST ''
+104 LOAD_CONST ''
+106 LOAD_CONST 1
+108 PRECALL 
+112 CALL 
+122 PRECALL 
+126 CALL 
+136 POP_TOP 
+138 LOAD_GLOBAL agent
+150 LOAD_ATTR has_valid_evidence
+160 STORE_FAST @py_assert1
+162 PUSH_NULL 
+164 LOAD_FAST @py_assert1
+166 LOAD_FAST state
+168 LOAD_GLOBAL TESTS
+180 PRECALL 
+184 CALL 
+194 STORE_FAST @py_assert5
+196 LOAD_FAST @py_assert5
+198 UNARY_NOT 
+200 STORE_FAST @py_assert7
+202 LOAD_FAST @py_assert7
+204 EXTENDED_ARG 
+206 POP_JUMP_FORWARD_IF_TRUE to 774
+208 LOAD_CONST 'assert not %(py6)s\n{%(py6)s = %(py2)s\n{%(py2)s = %(py0)s.has_valid_evidence\n}(%(py3)s, %(py4)s)\n}'
+210 LOAD_CONST 'agent'
+212 LOAD_GLOBAL NULL + @py_builtins
+224 LOAD_ATTR locals
+234 PRECALL 
+238 CALL 
+248 CONTAINS_OP 
+250 POP_JUMP_FORWARD_IF_TRUE to 302
+252 LOAD_GLOBAL NULL + @pytest_ar
+264 LOAD_ATTR _should_repr_global_name
+274 LOAD_GLOBAL agent
+286 PRECALL 
+290 CALL 
+300 POP_JUMP_FORWARD_IF_FALSE to 352
+302 LOAD_GLOBAL NULL + @pytest_ar
+314 LOAD_ATTR _saferepr
+324 LOAD_GLOBAL agent
+336 PRECALL 
+340 CALL 
+350 JUMP_FORWARD to 354
+352 LOAD_CONST 'agent'
+354 LOAD_GLOBAL NULL + @pytest_ar
+366 LOAD_ATTR _saferepr
+376 LOAD_FAST @py_assert1
+378 PRECALL 
+382 CALL 
+392 LOAD_CONST 'state'
+394 LOAD_GLOBAL NULL + @py_builtins
+406 LOAD_ATTR locals
+416 PRECALL 
+420 CALL 
+430 CONTAINS_OP 
+432 POP_JUMP_FORWARD_IF_TRUE to 474
+434 LOAD_GLOBAL NULL + @pytest_ar
+446 LOAD_ATTR _should_repr_global_name
+456 LOAD_FAST state
+458 PRECALL 
+462 CALL 
+472 POP_JUMP_FORWARD_IF_FALSE to 514
+474 LOAD_GLOBAL NULL + @pytest_ar
+486 LOAD_ATTR _saferepr
+496 LOAD_FAST state
+498 PRECALL 
+502 CALL 
+512 JUMP_FORWARD to 516
+514 LOAD_CONST 'state'
+516 LOAD_CONST 'TESTS'
+518 LOAD_GLOBAL NULL + @py_builtins
+530 LOAD_ATTR locals
+540 PRECALL 
+544 CALL 
+554 CONTAINS_OP 
+556 POP_JUMP_FORWARD_IF_TRUE to 608
+558 LOAD_GLOBAL NULL + @pytest_ar
+570 LOAD_ATTR _should_repr_global_name
+580 LOAD_GLOBAL TESTS
+592 PRECALL 
+596 CALL 
+606 POP_JUMP_FORWARD_IF_FALSE to 658
+608 LOAD_GLOBAL NULL + @pytest_ar
+620 LOAD_ATTR _saferepr
+630 LOAD_GLOBAL TESTS
+642 PRECALL 
+646 CALL 
+656 JUMP_FORWARD to 660
+658 LOAD_CONST 'TESTS'
+660 LOAD_GLOBAL NULL + @pytest_ar
+672 LOAD_ATTR _saferepr
+682 LOAD_FAST @py_assert5
+684 PRECALL 
+688 CALL 
+698 LOAD_CONST ('py0', 'py2', 'py3', 'py4', 'py6')
+700 BUILD_CONST_KEY_MAP 
+702 BINARY_OP %
+706 STORE_FAST @py_format8
+708 LOAD_GLOBAL NULL + AssertionError
+720 LOAD_GLOBAL NULL + @pytest_ar
+732 LOAD_ATTR _format_explanation
+742 LOAD_FAST @py_format8
+744 PRECALL 
+748 CALL 
+758 PRECALL 
+762 CALL 
+772 RAISE_VARARGS 
+774 LOAD_CONST None
+776 COPY 
+778 STORE_FAST @py_assert1
+780 COPY 
+782 STORE_FAST @py_assert5
+784 STORE_FAST @py_assert7
+786 LOAD_GLOBAL agent
+798 LOAD_ATTR is_task_complete
+808 STORE_FAST @py_assert1
+810 PUSH_NULL 
+812 LOAD_FAST @py_assert1
+814 LOAD_FAST state
+816 PRECALL 
+820 CALL 
+830 STORE_FAST @py_assert4
+832 LOAD_FAST @py_assert4
+834 UNARY_NOT 
+836 STORE_FAST @py_assert6
+838 LOAD_FAST @py_assert6
+840 POP_JUMP_FORWARD_IF_TRUE to 1264
+842 LOAD_CONST 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}'
+844 LOAD_CONST 'agent'
+846 LOAD_GLOBAL NULL + @py_builtins
+858 LOAD_ATTR locals
+868 PRECALL 
+872 CALL 
+882 CONTAINS_OP 
+884 POP_JUMP_FORWARD_IF_TRUE to 936
+886 LOAD_GLOBAL NULL + @pytest_ar
+898 LOAD_ATTR _should_repr_global_name
+908 LOAD_GLOBAL agent
+920 PRECALL 
+924 CALL 
+934 POP_JUMP_FORWARD_IF_FALSE to 986
+936 LOAD_GLOBAL NULL + @pytest_ar
+948 LOAD_ATTR _saferepr
+958 LOAD_GLOBAL agent
+970 PRECALL 
+974 CALL 
+984 JUMP_FORWARD to 988
+986 LOAD_CONST 'agent'
+988 LOAD_GLOBAL NULL + @pytest_ar
+1000 LOAD_ATTR _saferepr
+1010 LOAD_FAST @py_assert1
+1012 PRECALL 
+1016 CALL 
+1026 LOAD_CONST 'state'
+1028 LOAD_GLOBAL NULL + @py_builtins
+1040 LOAD_ATTR locals
+1050 PRECALL 
+1054 CALL 
+1064 CONTAINS_OP 
+1066 POP_JUMP_FORWARD_IF_TRUE to 1108
+1068 LOAD_GLOBAL NULL + @pytest_ar
+1080 LOAD_ATTR _should_repr_global_name
+1090 LOAD_FAST state
+1092 PRECALL 
+1096 CALL 
+1106 POP_JUMP_FORWARD_IF_FALSE to 1148
+1108 LOAD_GLOBAL NULL + @pytest_ar
+1120 LOAD_ATTR _saferepr
+1130 LOAD_FAST state
+1132 PRECALL 
+1136 CALL 
+1146 JUMP_FORWARD to 1150
+1148 LOAD_CONST 'state'
+1150 LOAD_GLOBAL NULL + @pytest_ar
+1162 LOAD_ATTR _saferepr
+1172 LOAD_FAST @py_assert4
+1174 PRECALL 
+1178 CALL 
+1188 LOAD_CONST ('py0', 'py2', 'py3', 'py5')
+1190 BUILD_CONST_KEY_MAP 
+1192 BINARY_OP %
+1196 STORE_FAST @py_format7
+1198 LOAD_GLOBAL NULL + AssertionError
+1210 LOAD_GLOBAL NULL + @pytest_ar
+1222 LOAD_ATTR _format_explanation
+1232 LOAD_FAST @py_format7
+1234 PRECALL 
+1238 CALL 
+1248 PRECALL 
+1252 CALL 
+1262 RAISE_VARARGS 
+1264 LOAD_CONST None
+1266 COPY 
+1268 STORE_FAST @py_assert1
+1270 COPY 
+1272 STORE_FAST @py_assert4
+1274 STORE_FAST @py_assert6
+1276 LOAD_CONST None
+1278 RETURN_VALUE 
+
+### FUNC test_plain_git_diff_records_evidence
+0 RESUME 
+2 LOAD_GLOBAL agent
+14 LOAD_METHOD AgentState
+36 LOAD_CONST 3
+38 KW_NAMES 
+40 PRECALL 
+44 CALL 
+54 STORE_FAST state
+56 LOAD_GLOBAL agent
+68 LOAD_METHOD record_command_evidence
+90 LOAD_FAST state
+92 LOAD_GLOBAL agent
+104 LOAD_METHOD CommandResult
+126 LOAD_CONST 'git diff'
+128 LOAD_CONST ''
+130 LOAD_CONST ''
+132 LOAD_CONST 0
+134 PRECALL 
+138 CALL 
+148 PRECALL 
+152 CALL 
+162 POP_TOP 
+164 LOAD_FAST state
+166 LOAD_ATTR evidence
+176 LOAD_GLOBAL agent
+188 LOAD_ATTR EvidenceType
+198 LOAD_ATTR DIFF_INSPECTED
+208 BINARY_SUBSCR 
+218 STORE_FAST @py_assert0
+220 LOAD_CONST 3
+222 STORE_FAST @py_assert3
+224 LOAD_FAST @py_assert0
+226 LOAD_FAST @py_assert3
+228 COMPARE_OP ==
+234 STORE_FAST @py_assert2
+236 LOAD_FAST @py_assert2
+238 POP_JUMP_FORWARD_IF_TRUE to 456
+240 LOAD_GLOBAL NULL + @pytest_ar
+252 LOAD_ATTR _call_reprcompare
+262 LOAD_CONST ('==',)
+264 LOAD_FAST @py_assert2
+266 BUILD_TUPLE 
+268 LOAD_CONST ('%(py1)s == %(py4)s',)
+270 LOAD_FAST @py_assert0
+272 LOAD_FAST @py_assert3
+274 BUILD_TUPLE 
+276 PRECALL 
+280 CALL 
+290 LOAD_GLOBAL NULL + @pytest_ar
+302 LOAD_ATTR _saferepr
+312 LOAD_FAST @py_assert0
+314 PRECALL 
+318 CALL 
+328 LOAD_GLOBAL NULL + @pytest_ar
+340 LOAD_ATTR _saferepr
+350 LOAD_FAST @py_assert3
+352 PRECALL 
+356 CALL 
+366 LOAD_CONST ('py1', 'py4')
+368 BUILD_CONST_KEY_MAP 
+370 BINARY_OP %
+374 STORE_FAST @py_format5
+376 LOAD_CONST 'assert %(py6)s'
+378 LOAD_CONST 'py6'
+380 LOAD_FAST @py_format5
+382 BUILD_MAP 
+384 BINARY_OP %
+388 STORE_FAST @py_format7
+390 LOAD_GLOBAL NULL + AssertionError
+402 LOAD_GLOBAL NULL + @pytest_ar
+414 LOAD_ATTR _format_explanation
+424 LOAD_FAST @py_format7
+426 PRECALL 
+430 CALL 
+440 PRECALL 
+444 CALL 
+454 RAISE_VARARGS 
+456 LOAD_CONST None
+458 COPY 
+460 STORE_FAST @py_assert0
+462 COPY 
+464 STORE_FAST @py_assert2
+466 STORE_FAST @py_assert3
+468 LOAD_CONST None
+470 RETURN_VALUE 
+
+### FUNC test_commands_detect_changes_even_on_failure
+0 MAKE_CELL tmp_path
+2 MAKE_CELL outcome
+4 RESUME 
+6 LOAD_FAST monkeypatch
+8 LOAD_METHOD setattr
+30 LOAD_GLOBAL agent
+42 LOAD_CONST 'WORKSPACE'
+44 LOAD_DEREF tmp_path
+46 PRECALL 
+50 CALL 
+60 POP_TOP 
+62 LOAD_GLOBAL NULL + verified_state
+74 PRECALL 
+78 CALL 
+88 STORE_FAST state
+90 LOAD_CLOSURE outcome
+92 LOAD_CLOSURE tmp_path
+94 BUILD_TUPLE 
+96 LOAD_CONST <code object command at 0x10ac38a40, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 50>
+98 MAKE_FUNCTION closure
+100 STORE_FAST command
+102 LOAD_FAST monkeypatch
+104 LOAD_METHOD setattr
+126 LOAD_GLOBAL agent
+138 LOAD_CONST 'run_command'
+140 LOAD_FAST command
+142 PRECALL 
+146 CALL 
+156 POP_TOP 
+158 LOAD_GLOBAL agent
+170 LOAD_METHOD execute_tool
+192 LOAD_CONST 'run_command'
+194 LOAD_CONST 'command'
+196 LOAD_CONST 'pytest'
+198 BUILD_MAP 
+200 LOAD_FAST state
+202 PRECALL 
+206 CALL 
+216 POP_TOP 
+218 LOAD_FAST state
+220 LOAD_ATTR workspace_revision
+230 STORE_FAST @py_assert1
+232 LOAD_CONST 1
+234 STORE_FAST @py_assert4
+236 LOAD_FAST @py_assert1
+238 LOAD_FAST @py_assert4
+240 COMPARE_OP ==
+246 STORE_FAST @py_assert3
+248 LOAD_FAST @py_assert3
+250 POP_JUMP_FORWARD_IF_TRUE to 592
+252 LOAD_GLOBAL NULL + @pytest_ar
+264 LOAD_ATTR _call_reprcompare
+274 LOAD_CONST ('==',)
+276 LOAD_FAST @py_assert3
+278 BUILD_TUPLE 
+280 LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.workspace_revision\n} == %(py5)s',)
+282 LOAD_FAST @py_assert1
+284 LOAD_FAST @py_assert4
+286 BUILD_TUPLE 
+288 PRECALL 
+292 CALL 
+302 LOAD_CONST 'state'
+304 LOAD_GLOBAL NULL + @py_builtins
+316 LOAD_ATTR locals
+326 PRECALL 
+330 CALL 
+340 CONTAINS_OP 
+342 POP_JUMP_FORWARD_IF_TRUE to 384
+344 LOAD_GLOBAL NULL + @pytest_ar
+356 LOAD_ATTR _should_repr_global_name
+366 LOAD_FAST state
+368 PRECALL 
+372 CALL 
+382 POP_JUMP_FORWARD_IF_FALSE to 424
+384 LOAD_GLOBAL NULL + @pytest_ar
+396 LOAD_ATTR _saferepr
+406 LOAD_FAST state
+408 PRECALL 
+412 CALL 
+422 JUMP_FORWARD to 426
+424 LOAD_CONST 'state'
+426 LOAD_GLOBAL NULL + @pytest_ar
+438 LOAD_ATTR _saferepr
+448 LOAD_FAST @py_assert1
+450 PRECALL 
+454 CALL 
+464 LOAD_GLOBAL NULL + @pytest_ar
+476 LOAD_ATTR _saferepr
+486 LOAD_FAST @py_assert4
+488 PRECALL 
+492 CALL 
+502 LOAD_CONST ('py0', 'py2', 'py5')
+504 BUILD_CONST_KEY_MAP 
+506 BINARY_OP %
+510 STORE_FAST @py_format6
+512 LOAD_CONST 'assert %(py7)s'
+514 LOAD_CONST 'py7'
+516 LOAD_FAST @py_format6
+518 BUILD_MAP 
+520 BINARY_OP %
+524 STORE_FAST @py_format8
+526 LOAD_GLOBAL NULL + AssertionError
+538 LOAD_GLOBAL NULL + @pytest_ar
+550 LOAD_ATTR _format_explanation
+560 LOAD_FAST @py_format8
+562 PRECALL 
+566 CALL 
+576 PRECALL 
+580 CALL 
+590 RAISE_VARARGS 
+592 LOAD_CONST None
+594 COPY 
+596 STORE_FAST @py_assert1
+598 COPY 
+600 STORE_FAST @py_assert3
+602 STORE_FAST @py_assert4
+604 LOAD_GLOBAL agent
+616 LOAD_ATTR has_valid_evidence
+626 STORE_FAST @py_assert1
+628 PUSH_NULL 
+630 LOAD_FAST @py_assert1
+632 LOAD_FAST state
+634 LOAD_GLOBAL TESTS
+646 PRECALL 
+650 CALL 
+660 STORE_FAST @py_assert5
+662 LOAD_FAST @py_assert5
+664 UNARY_NOT 
+666 STORE_FAST @py_assert7
+668 LOAD_FAST @py_assert7
+670 EXTENDED_ARG 
+672 POP_JUMP_FORWARD_IF_TRUE to 1240
+674 LOAD_CONST 'assert not %(py6)s\n{%(py6)s = %(py2)s\n{%(py2)s = %(py0)s.has_valid_evidence\n}(%(py3)s, %(py4)s)\n}'
+676 LOAD_CONST 'agent'
+678 LOAD_GLOBAL NULL + @py_builtins
+690 LOAD_ATTR locals
+700 PRECALL 
+704 CALL 
+714 CONTAINS_OP 
+716 POP_JUMP_FORWARD_IF_TRUE to 768
+718 LOAD_GLOBAL NULL + @pytest_ar
+730 LOAD_ATTR _should_repr_global_name
+740 LOAD_GLOBAL agent
+752 PRECALL 
+756 CALL 
+766 POP_JUMP_FORWARD_IF_FALSE to 818
+768 LOAD_GLOBAL NULL + @pytest_ar
+780 LOAD_ATTR _saferepr
+790 LOAD_GLOBAL agent
+802 PRECALL 
+806 CALL 
+816 JUMP_FORWARD to 820
+818 LOAD_CONST 'agent'
+820 LOAD_GLOBAL NULL + @pytest_ar
+832 LOAD_ATTR _saferepr
+842 LOAD_FAST @py_assert1
+844 PRECALL 
+848 CALL 
+858 LOAD_CONST 'state'
+860 LOAD_GLOBAL NULL + @py_builtins
+872 LOAD_ATTR locals
+882 PRECALL 
+886 CALL 
+896 CONTAINS_OP 
+898 POP_JUMP_FORWARD_IF_TRUE to 940
+900 LOAD_GLOBAL NULL + @pytest_ar
+912 LOAD_ATTR _should_repr_global_name
+922 LOAD_FAST state
+924 PRECALL 
+928 CALL 
+938 POP_JUMP_FORWARD_IF_FALSE to 980
+940 LOAD_GLOBAL NULL + @pytest_ar
+952 LOAD_ATTR _saferepr
+962 LOAD_FAST state
+964 PRECALL 
+968 CALL 
+978 JUMP_FORWARD to 982
+980 LOAD_CONST 'state'
+982 LOAD_CONST 'TESTS'
+984 LOAD_GLOBAL NULL + @py_builtins
+996 LOAD_ATTR locals
+1006 PRECALL 
+1010 CALL 
+1020 CONTAINS_OP 
+1022 POP_JUMP_FORWARD_IF_TRUE to 1074
+1024 LOAD_GLOBAL NULL + @pytest_ar
+1036 LOAD_ATTR _should_repr_global_name
+1046 LOAD_GLOBAL TESTS
+1058 PRECALL 
+1062 CALL 
+1072 POP_JUMP_FORWARD_IF_FALSE to 1124
+1074 LOAD_GLOBAL NULL + @pytest_ar
+1086 LOAD_ATTR _saferepr
+1096 LOAD_GLOBAL TESTS
+1108 PRECALL 
+1112 CALL 
+1122 JUMP_FORWARD to 1126
+1124 LOAD_CONST 'TESTS'
+1126 LOAD_GLOBAL NULL + @pytest_ar
+1138 LOAD_ATTR _saferepr
+1148 LOAD_FAST @py_assert5
+1150 PRECALL 
+1154 CALL 
+1164 LOAD_CONST ('py0', 'py2', 'py3', 'py4', 'py6')
+1166 BUILD_CONST_KEY_MAP 
+1168 BINARY_OP %
+1172 STORE_FAST @py_format8
+1174 LOAD_GLOBAL NULL + AssertionError
+1186 LOAD_GLOBAL NULL + @pytest_ar
+1198 LOAD_ATTR _format_explanation
+1208 LOAD_FAST @py_format8
+1210 PRECALL 
+1214 CALL 
+1224 PRECALL 
+1228 CALL 
+1238 RAISE_VARARGS 
+1240 LOAD_CONST None
+1242 COPY 
+1244 STORE_FAST @py_assert1
+1246 COPY 
+1248 STORE_FAST @py_assert5
+1250 STORE_FAST @py_assert7
+1252 LOAD_GLOBAL agent
+1264 LOAD_ATTR is_task_complete
+1274 STORE_FAST @py_assert1
+1276 PUSH_NULL 
+1278 LOAD_FAST @py_assert1
+1280 LOAD_FAST state
+1282 PRECALL 
+1286 CALL 
+1296 STORE_FAST @py_assert4
+1298 LOAD_FAST @py_assert4
+1300 UNARY_NOT 
+1302 STORE_FAST @py_assert6
+1304 LOAD_FAST @py_assert6
+1306 POP_JUMP_FORWARD_IF_TRUE to 1730
+1308 LOAD_CONST 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}'
+1310 LOAD_CONST 'agent'
+1312 LOAD_GLOBAL NULL + @py_builtins
+1324 LOAD_ATTR locals
+1334 PRECALL 
+1338 CALL 
+1348 CONTAINS_OP 
+1350 POP_JUMP_FORWARD_IF_TRUE to 1402
+1352 LOAD_GLOBAL NULL + @pytest_ar
+1364 LOAD_ATTR _should_repr_global_name
+1374 LOAD_GLOBAL agent
+1386 PRECALL 
+1390 CALL 
+1400 POP_JUMP_FORWARD_IF_FALSE to 1452
+1402 LOAD_GLOBAL NULL + @pytest_ar
+1414 LOAD_ATTR _saferepr
+1424 LOAD_GLOBAL agent
+1436 PRECALL 
+1440 CALL 
+1450 JUMP_FORWARD to 1454
+1452 LOAD_CONST 'agent'
+1454 LOAD_GLOBAL NULL + @pytest_ar
+1466 LOAD_ATTR _saferepr
+1476 LOAD_FAST @py_assert1
+1478 PRECALL 
+1482 CALL 
+1492 LOAD_CONST 'state'
+1494 LOAD_GLOBAL NULL + @py_builtins
+1506 LOAD_ATTR locals
+1516 PRECALL 
+1520 CALL 
+1530 CONTAINS_OP 
+1532 POP_JUMP_FORWARD_IF_TRUE to 1574
+1534 LOAD_GLOBAL NULL + @pytest_ar
+1546 LOAD_ATTR _should_repr_global_name
+1556 LOAD_FAST state
+1558 PRECALL 
+1562 CALL 
+1572 POP_JUMP_FORWARD_IF_FALSE to 1614
+1574 LOAD_GLOBAL NULL + @pytest_ar
+1586 LOAD_ATTR _saferepr
+1596 LOAD_FAST state
+1598 PRECALL 
+1602 CALL 
+1612 JUMP_FORWARD to 1616
+1614 LOAD_CONST 'state'
+1616 LOAD_GLOBAL NULL + @pytest_ar
+1628 LOAD_ATTR _saferepr
+1638 LOAD_FAST @py_assert4
+1640 PRECALL 
+1644 CALL 
+1654 LOAD_CONST ('py0', 'py2', 'py3', 'py5')
+1656 BUILD_CONST_KEY_MAP 
+1658 BINARY_OP %
+1662 STORE_FAST @py_format7
+1664 LOAD_GLOBAL NULL + AssertionError
+1676 LOAD_GLOBAL NULL + @pytest_ar
+1688 LOAD_ATTR _format_explanation
+1698 LOAD_FAST @py_format7
+1700 PRECALL 
+1704 CALL 
+1714 PRECALL 
+1718 CALL 
+1728 RAISE_VARARGS 
+1730 LOAD_CONST None
+1732 COPY 
+1734 STORE_FAST @py_assert1
+1736 COPY 
+1738 STORE_FAST @py_assert4
+1740 STORE_FAST @py_assert6
+1742 LOAD_CONST None
+1744 RETURN_VALUE 
+
+### FUNC test_command_without_changes
+0 MAKE_CELL result
+2 RESUME 
+4 LOAD_FAST monkeypatch
+6 LOAD_METHOD setattr
+28 LOAD_GLOBAL agent
+40 LOAD_CONST 'WORKSPACE'
+42 LOAD_FAST tmp_path
+44 PRECALL 
+48 CALL 
+58 POP_TOP 
+60 LOAD_GLOBAL NULL + verified_state
+72 PRECALL 
+76 CALL 
+86 STORE_FAST state
+88 LOAD_FAST outcome
+90 LOAD_CONST 'timeout'
+92 COMPARE_OP ==
+98 POP_JUMP_FORWARD_IF_FALSE to 104
+100 LOAD_CONST 'Command timed out'
+102 JUMP_FORWARD to 160
+104 LOAD_GLOBAL agent
+116 LOAD_METHOD CommandResult
+138 LOAD_CONST 'pytest'
+140 LOAD_CONST ''
+142 LOAD_CONST ''
+144 LOAD_FAST outcome
+146 PRECALL 
+150 CALL 
+160 STORE_DEREF result
+162 LOAD_FAST monkeypatch
+164 LOAD_METHOD setattr
+186 LOAD_GLOBAL agent
+198 LOAD_CONST 'run_command'
+200 LOAD_CLOSURE result
+202 BUILD_TUPLE 
+204 LOAD_CONST <code object <lambda> at 0x10ac484b0, file "/Users/jingjun/Desktop/Githup/coding-agent/coding-agent/tests/test_workspace_revision.py", line 70>
+206 MAKE_FUNCTION closure
+208 PRECALL 
+212 CALL 
+222 POP_TOP 
+224 LOAD_GLOBAL agent
+236 LOAD_METHOD execute_tool
+258 LOAD_CONST 'run_command'
+260 LOAD_CONST 'command'
+262 LOAD_CONST 'pytest'
+264 BUILD_MAP 
+266 LOAD_FAST state
+268 PRECALL 
+272 CALL 
+282 POP_TOP 
+284 LOAD_FAST state
+286 LOAD_ATTR workspace_revision
+296 STORE_FAST @py_assert1
+298 LOAD_CONST 0
+300 STORE_FAST @py_assert4
+302 LOAD_FAST @py_assert1
+304 LOAD_FAST @py_assert4
+306 COMPARE_OP ==
+312 STORE_FAST @py_assert3
+314 LOAD_FAST @py_assert3
+316 POP_JUMP_FORWARD_IF_TRUE to 658
+318 LOAD_GLOBAL NULL + @pytest_ar
+330 LOAD_ATTR _call_reprcompare
+340 LOAD_CONST ('==',)
+342 LOAD_FAST @py_assert3
+344 BUILD_TUPLE 
+346 LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.workspace_revision\n} == %(py5)s',)
+348 LOAD_FAST @py_assert1
+350 LOAD_FAST @py_assert4
+352 BUILD_TUPLE 
+354 PRECALL 
+358 CALL 
+368 LOAD_CONST 'state'
+370 LOAD_GLOBAL NULL + @py_builtins
+382 LOAD_ATTR locals
+392 PRECALL 
+396 CALL 
+406 CONTAINS_OP 
+408 POP_JUMP_FORWARD_IF_TRUE to 450
+410 LOAD_GLOBAL NULL + @pytest_ar
+422 LOAD_ATTR _should_repr_global_name
+432 LOAD_FAST state
+434 PRECALL 
+438 CALL 
+448 POP_JUMP_FORWARD_IF_FALSE to 490
+450 LOAD_GLOBAL NULL + @pytest_ar
+462 LOAD_ATTR _saferepr
+472 LOAD_FAST state
+474 PRECALL 
+478 CALL 
+488 JUMP_FORWARD to 492
+490 LOAD_CONST 'state'
+492 LOAD_GLOBAL NULL + @pytest_ar
+504 LOAD_ATTR _saferepr
+514 LOAD_FAST @py_assert1
+516 PRECALL 
+520 CALL 
+530 LOAD_GLOBAL NULL + @pytest_ar
+542 LOAD_ATTR _saferepr
+552 LOAD_FAST @py_assert4
+554 PRECALL 
+558 CALL 
+568 LOAD_CONST ('py0', 'py2', 'py5')
+570 BUILD_CONST_KEY_MAP 
+572 BINARY_OP %
+576 STORE_FAST @py_format6
+578 LOAD_CONST 'assert %(py7)s'
+580 LOAD_CONST 'py7'
+582 LOAD_FAST @py_format6
+584 BUILD_MAP 
+586 BINARY_OP %
+590 STORE_FAST @py_format8
+592 LOAD_GLOBAL NULL + AssertionError
+604 LOAD_GLOBAL NULL + @pytest_ar
+616 LOAD_ATTR _format_explanation
+626 LOAD_FAST @py_format8
+628 PRECALL 
+632 CALL 
+642 PRECALL 
+646 CALL 
+656 RAISE_VARARGS 
+658 LOAD_CONST None
+660 COPY 
+662 STORE_FAST @py_assert1
+664 COPY 
+666 STORE_FAST @py_assert3
+668 STORE_FAST @py_assert4
+670 LOAD_GLOBAL agent
+682 LOAD_ATTR is_task_complete
+692 STORE_FAST @py_assert1
+694 PUSH_NULL 
+696 LOAD_FAST @py_assert1
+698 LOAD_FAST state
+700 PRECALL 
+704 CALL 
+714 STORE_FAST @py_assert4
+716 LOAD_CONST 0
+718 STORE_FAST @py_assert9
+720 LOAD_FAST outcome
+722 LOAD_FAST @py_assert9
+724 COMPARE_OP ==
+730 STORE_FAST @py_assert8
+732 LOAD_FAST @py_assert4
+734 LOAD_FAST @py_assert8
+736 COMPARE_OP ==
+742 STORE_FAST @py_assert6
+744 LOAD_FAST @py_assert6
+746 EXTENDED_ARG 
+748 POP_JUMP_FORWARD_IF_TRUE to 1458
+750 LOAD_GLOBAL NULL + @pytest_ar
+762 LOAD_ATTR _call_reprcompare
+772 LOAD_CONST ('==',)
+774 LOAD_FAST @py_assert8
+776 BUILD_TUPLE 
+778 LOAD_CONST ('%(py7)s == %(py10)s',)
+780 LOAD_FAST outcome
+782 LOAD_FAST @py_assert9
+784 BUILD_TUPLE 
+786 PRECALL 
+790 CALL 
+800 LOAD_CONST 'outcome'
+802 LOAD_GLOBAL NULL + @py_builtins
+814 LOAD_ATTR locals
+824 PRECALL 
+828 CALL 
+838 CONTAINS_OP 
+840 POP_JUMP_FORWARD_IF_TRUE to 882
+842 LOAD_GLOBAL NULL + @pytest_ar
+854 LOAD_ATTR _should_repr_global_name
+864 LOAD_FAST outcome
+866 PRECALL 
+870 CALL 
+880 POP_JUMP_FORWARD_IF_FALSE to 922
+882 LOAD_GLOBAL NULL + @pytest_ar
+894 LOAD_ATTR _saferepr
+904 LOAD_FAST outcome
+906 PRECALL 
+910 CALL 
+920 JUMP_FORWARD to 924
+922 LOAD_CONST 'outcome'
+924 LOAD_GLOBAL NULL + @pytest_ar
+936 LOAD_ATTR _saferepr
+946 LOAD_FAST @py_assert9
+948 PRECALL 
+952 CALL 
+962 LOAD_CONST ('py7', 'py10')
+964 BUILD_CONST_KEY_MAP 
+966 BINARY_OP %
+970 STORE_FAST @py_format11
+972 LOAD_GLOBAL NULL + @pytest_ar
+984 LOAD_ATTR _call_reprcompare
+994 LOAD_CONST ('==',)
+996 LOAD_FAST @py_assert6
+998 BUILD_TUPLE 
+1000 LOAD_CONST ('%(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n} == (%(py12)s)',)
+1002 LOAD_FAST @py_assert4
+1004 LOAD_FAST @py_assert8
+1006 BUILD_TUPLE 
+1008 PRECALL 
+1012 CALL 
+1022 LOAD_CONST 'agent'
+1024 LOAD_GLOBAL NULL + @py_builtins
+1036 LOAD_ATTR locals
+1046 PRECALL 
+1050 CALL 
+1060 CONTAINS_OP 
+1062 POP_JUMP_FORWARD_IF_TRUE to 1114
+1064 LOAD_GLOBAL NULL + @pytest_ar
+1076 LOAD_ATTR _should_repr_global_name
+1086 LOAD_GLOBAL agent
+1098 PRECALL 
+1102 CALL 
+1112 POP_JUMP_FORWARD_IF_FALSE to 1164
+1114 LOAD_GLOBAL NULL + @pytest_ar
+1126 LOAD_ATTR _saferepr
+1136 LOAD_GLOBAL agent
+1148 PRECALL 
+1152 CALL 
+1162 JUMP_FORWARD to 1166
+1164 LOAD_CONST 'agent'
+1166 LOAD_GLOBAL NULL + @pytest_ar
+1178 LOAD_ATTR _saferepr
+1188 LOAD_FAST @py_assert1
+1190 PRECALL 
+1194 CALL 
+1204 LOAD_CONST 'state'
+1206 LOAD_GLOBAL NULL + @py_builtins
+1218 LOAD_ATTR locals
+1228 PRECALL 
+1232 CALL 
+1242 CONTAINS_OP 
+1244 POP_JUMP_FORWARD_IF_TRUE to 1286
+1246 LOAD_GLOBAL NULL + @pytest_ar
+1258 LOAD_ATTR _should_repr_global_name
+1268 LOAD_FAST state
+1270 PRECALL 
+1274 CALL 
+1284 POP_JUMP_FORWARD_IF_FALSE to 1326
+1286 LOAD_GLOBAL NULL + @pytest_ar
+1298 LOAD_ATTR _saferepr
+1308 LOAD_FAST state
+1310 PRECALL 
+1314 CALL 
+1324 JUMP_FORWARD to 1328
+1326 LOAD_CONST 'state'
+1328 LOAD_GLOBAL NULL + @pytest_ar
+1340 LOAD_ATTR _saferepr
+1350 LOAD_FAST @py_assert4
+1352 PRECALL 
+1356 CALL 
+1366 LOAD_FAST @py_format11
+1368 LOAD_CONST ('py0', 'py2', 'py3', 'py5', 'py12')
+1370 BUILD_CONST_KEY_MAP 
+1372 BINARY_OP %
+1376 STORE_FAST @py_format13
+1378 LOAD_CONST 'assert %(py14)s'
+1380 LOAD_CONST 'py14'
+1382 LOAD_FAST @py_format13
+1384 BUILD_MAP 
+1386 BINARY_OP %
+1390 STORE_FAST @py_format15
+1392 LOAD_GLOBAL NULL + AssertionError
+1404 LOAD_GLOBAL NULL + @pytest_ar
+1416 LOAD_ATTR _format_explanation
+1426 LOAD_FAST @py_format15
+1428 PRECALL 
+1432 CALL 
+1442 PRECALL 
+1446 CALL 
+1456 RAISE_VARARGS 
+1458 LOAD_CONST None
+1460 COPY 
+1462 STORE_FAST @py_assert1
+1464 COPY 
+1466 STORE_FAST @py_assert4
+1468 COPY 
+1470 STORE_FAST @py_assert6
+1472 COPY 
+1474 STORE_FAST @py_assert8
+1476 STORE_FAST @py_assert9
+1478 LOAD_CONST None
+1480 RETURN_VALUE 
+
+### FUNC test_file_tools_only_increment_on_change
+0 RESUME 
+2 LOAD_FAST monkeypatch
+4 LOAD_METHOD setattr
+26 LOAD_GLOBAL agent
+38 LOAD_CONST 'WORKSPACE'
+40 LOAD_FAST tmp_path
+42 PRECALL 
+46 CALL 
+56 POP_TOP 
+58 LOAD_GLOBAL agent
+70 LOAD_METHOD AgentState
+92 PRECALL 
+96 CALL 
+106 STORE_FAST state
+108 LOAD_CONST 'file.py'
+110 LOAD_CONST 'hello'
+112 LOAD_CONST ('path', 'content')
+114 BUILD_CONST_KEY_MAP 
+116 STORE_FAST args
+118 LOAD_GLOBAL agent
+130 LOAD_METHOD execute_tool
+152 LOAD_CONST 'write_file'
+154 LOAD_FAST args
+156 LOAD_FAST state
+158 PRECALL 
+162 CALL 
+172 POP_TOP 
+174 LOAD_GLOBAL agent
+186 LOAD_METHOD execute_tool
+208 LOAD_CONST 'write_file'
+210 LOAD_FAST args
+212 LOAD_FAST state
+214 PRECALL 
+218 CALL 
+228 POP_TOP 
+230 LOAD_FAST state
+232 LOAD_ATTR workspace_revision
+242 STORE_FAST @py_assert1
+244 LOAD_CONST 1
+246 STORE_FAST @py_assert4
+248 LOAD_FAST @py_assert1
+250 LOAD_FAST @py_assert4
+252 COMPARE_OP ==
+258 STORE_FAST @py_assert3
+260 LOAD_FAST @py_assert3
+262 POP_JUMP_FORWARD_IF_TRUE to 604
+264 LOAD_GLOBAL NULL + @pytest_ar
+276 LOAD_ATTR _call_reprcompare
+286 LOAD_CONST ('==',)
+288 LOAD_FAST @py_assert3
+290 BUILD_TUPLE 
+292 LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.workspace_revision\n} == %(py5)s',)
+294 LOAD_FAST @py_assert1
+296 LOAD_FAST @py_assert4
+298 BUILD_TUPLE 
+300 PRECALL 
+304 CALL 
+314 LOAD_CONST 'state'
+316 LOAD_GLOBAL NULL + @py_builtins
+328 LOAD_ATTR locals
+338 PRECALL 
+342 CALL 
+352 CONTAINS_OP 
+354 POP_JUMP_FORWARD_IF_TRUE to 396
+356 LOAD_GLOBAL NULL + @pytest_ar
+368 LOAD_ATTR _should_repr_global_name
+378 LOAD_FAST state
+380 PRECALL 
+384 CALL 
+394 POP_JUMP_FORWARD_IF_FALSE to 436
+396 LOAD_GLOBAL NULL + @pytest_ar
+408 LOAD_ATTR _saferepr
+418 LOAD_FAST state
+420 PRECALL 
+424 CALL 
+434 JUMP_FORWARD to 438
+436 LOAD_CONST 'state'
+438 LOAD_GLOBAL NULL + @pytest_ar
+450 LOAD_ATTR _saferepr
+460 LOAD_FAST @py_assert1
+462 PRECALL 
+466 CALL 
+476 LOAD_GLOBAL NULL + @pytest_ar
+488 LOAD_ATTR _saferepr
+498 LOAD_FAST @py_assert4
+500 PRECALL 
+504 CALL 
+514 LOAD_CONST ('py0', 'py2', 'py5')
+516 BUILD_CONST_KEY_MAP 
+518 BINARY_OP %
+522 STORE_FAST @py_format6
+524 LOAD_CONST 'assert %(py7)s'
+526 LOAD_CONST 'py7'
+528 LOAD_FAST @py_format6
+530 BUILD_MAP 
+532 BINARY_OP %
+536 STORE_FAST @py_format8
+538 LOAD_GLOBAL NULL + AssertionError
+550 LOAD_GLOBAL NULL + @pytest_ar
+562 LOAD_ATTR _format_explanation
+572 LOAD_FAST @py_format8
+574 PRECALL 
+578 CALL 
+588 PRECALL 
+592 CALL 
+602 RAISE_VARARGS 
+604 LOAD_CONST None
+606 COPY 
+608 STORE_FAST @py_assert1
+610 COPY 
+612 STORE_FAST @py_assert3
+614 STORE_FAST @py_assert4
+616 LOAD_CONST 'file.py'
+618 LOAD_CONST 'hello'
+620 LOAD_CONST 'world'
+622 LOAD_CONST ('path', 'old_text', 'new_text')
+624 BUILD_CONST_KEY_MAP 
+626 STORE_FAST args
+628 LOAD_GLOBAL agent
+640 LOAD_METHOD execute_tool
+662 LOAD_CONST 'replace_text'
+664 LOAD_FAST args
+666 LOAD_FAST state
+668 PRECALL 
+672 CALL 
+682 POP_TOP 
+684 LOAD_GLOBAL agent
+696 LOAD_METHOD execute_tool
+718 LOAD_CONST 'replace_text'
+720 LOAD_FAST args
+722 LOAD_FAST state
+724 PRECALL 
+728 CALL 
+738 POP_TOP 
+740 LOAD_FAST state
+742 LOAD_ATTR workspace_revision
+752 STORE_FAST @py_assert1
+754 LOAD_CONST 2
+756 STORE_FAST @py_assert4
+758 LOAD_FAST @py_assert1
+760 LOAD_FAST @py_assert4
+762 COMPARE_OP ==
+768 STORE_FAST @py_assert3
+770 LOAD_FAST @py_assert3
+772 POP_JUMP_FORWARD_IF_TRUE to 1114
+774 LOAD_GLOBAL NULL + @pytest_ar
+786 LOAD_ATTR _call_reprcompare
+796 LOAD_CONST ('==',)
+798 LOAD_FAST @py_assert3
+800 BUILD_TUPLE 
+802 LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.workspace_revision\n} == %(py5)s',)
+804 LOAD_FAST @py_assert1
+806 LOAD_FAST @py_assert4
+808 BUILD_TUPLE 
+810 PRECALL 
+814 CALL 
+824 LOAD_CONST 'state'
+826 LOAD_GLOBAL NULL + @py_builtins
+838 LOAD_ATTR locals
+848 PRECALL 
+852 CALL 
+862 CONTAINS_OP 
+864 POP_JUMP_FORWARD_IF_TRUE to 906
+866 LOAD_GLOBAL NULL + @pytest_ar
+878 LOAD_ATTR _should_repr_global_name
+888 LOAD_FAST state
+890 PRECALL 
+894 CALL 
+904 POP_JUMP_FORWARD_IF_FALSE to 946
+906 LOAD_GLOBAL NULL + @pytest_ar
+918 LOAD_ATTR _saferepr
+928 LOAD_FAST state
+930 PRECALL 
+934 CALL 
+944 JUMP_FORWARD to 948
+946 LOAD_CONST 'state'
+948 LOAD_GLOBAL NULL + @pytest_ar
+960 LOAD_ATTR _saferepr
+970 LOAD_FAST @py_assert1
+972 PRECALL 
+976 CALL 
+986 LOAD_GLOBAL NULL + @pytest_ar
+998 LOAD_ATTR _saferepr
+1008 LOAD_FAST @py_assert4
+1010 PRECALL 
+1014 CALL 
+1024 LOAD_CONST ('py0', 'py2', 'py5')
+1026 BUILD_CONST_KEY_MAP 
+1028 BINARY_OP %
+1032 STORE_FAST @py_format6
+1034 LOAD_CONST 'assert %(py7)s'
+1036 LOAD_CONST 'py7'
+1038 LOAD_FAST @py_format6
+1040 BUILD_MAP 
+1042 BINARY_OP %
+1046 STORE_FAST @py_format8
+1048 LOAD_GLOBAL NULL + AssertionError
+1060 LOAD_GLOBAL NULL + @pytest_ar
+1072 LOAD_ATTR _format_explanation
+1082 LOAD_FAST @py_format8
+1084 PRECALL 
+1088 CALL 
+1098 PRECALL 
+1102 CALL 
+1112 RAISE_VARARGS 
+1114 LOAD_CONST None
+1116 COPY 
+1118 STORE_FAST @py_assert1
+1120 COPY 
+1122 STORE_FAST @py_assert3
+1124 STORE_FAST @py_assert4
+1126 LOAD_CONST None
+1128 RETURN_VALUE 
+
+### FUNC test_snapshot_tracks_delete_mode_and_ignores_cache
+0 RESUME 
+2 LOAD_FAST monkeypatch
+4 LOAD_METHOD setattr
+26 LOAD_GLOBAL agent
+38 LOAD_CONST 'WORKSPACE'
+40 LOAD_FAST tmp_path
+42 PRECALL 
+46 CALL 
+56 POP_TOP 
+58 LOAD_FAST tmp_path
+60 LOAD_CONST 'app.py'
+62 BINARY_OP /
+66 STORE_FAST file
+68 LOAD_FAST file
+70 LOAD_METHOD write_text
+92 LOAD_CONST 'hello'
+94 PRECALL 
+98 CALL 
+108 POP_TOP 
+110 LOAD_GLOBAL agent
+122 LOAD_METHOD snapshot_workspace
+144 PRECALL 
+148 CALL 
+158 STORE_FAST before
+160 LOAD_FAST tmp_path
+162 LOAD_CONST '__pycache__'
+164 BINARY_OP /
+168 STORE_FAST cache
+170 LOAD_FAST cache
+172 LOAD_METHOD mkdir
+194 PRECALL 
+198 CALL 
+208 POP_TOP 
+210 LOAD_FAST cache
+212 LOAD_CONST 'app.pyc'
+214 BINARY_OP /
+218 LOAD_METHOD write_bytes
+240 LOAD_CONST b'cache'
+242 PRECALL 
+246 CALL 
+256 POP_TOP 
+258 LOAD_GLOBAL agent
+270 LOAD_ATTR snapshot_workspace
+280 STORE_FAST @py_assert1
+282 PUSH_NULL 
+284 LOAD_FAST @py_assert1
+286 PRECALL 
+290 CALL 
+300 STORE_FAST @py_assert3
+302 LOAD_FAST @py_assert3
+304 LOAD_FAST before
+306 COMPARE_OP ==
+312 STORE_FAST @py_assert5
+314 LOAD_FAST @py_assert5
+316 POP_JUMP_FORWARD_IF_TRUE to 802
+318 LOAD_GLOBAL NULL + @pytest_ar
+330 LOAD_ATTR _call_reprcompare
+340 LOAD_CONST ('==',)
+342 LOAD_FAST @py_assert5
+344 BUILD_TUPLE 
+346 LOAD_CONST ('%(py4)s\n{%(py4)s = %(py2)s\n{%(py2)s = %(py0)s.snapshot_workspace\n}()\n} == %(py6)s',)
+348 LOAD_FAST @py_assert3
+350 LOAD_FAST before
+352 BUILD_TUPLE 
+354 PRECALL 
+358 CALL 
+368 LOAD_CONST 'agent'
+370 LOAD_GLOBAL NULL + @py_builtins
+382 LOAD_ATTR locals
+392 PRECALL 
+396 CALL 
+406 CONTAINS_OP 
+408 POP_JUMP_FORWARD_IF_TRUE to 460
+410 LOAD_GLOBAL NULL + @pytest_ar
+422 LOAD_ATTR _should_repr_global_name
+432 LOAD_GLOBAL agent
+444 PRECALL 
+448 CALL 
+458 POP_JUMP_FORWARD_IF_FALSE to 510
+460 LOAD_GLOBAL NULL + @pytest_ar
+472 LOAD_ATTR _saferepr
+482 LOAD_GLOBAL agent
+494 PRECALL 
+498 CALL 
+508 JUMP_FORWARD to 512
+510 LOAD_CONST 'agent'
+512 LOAD_GLOBAL NULL + @pytest_ar
+524 LOAD_ATTR _saferepr
+534 LOAD_FAST @py_assert1
+536 PRECALL 
+540 CALL 
+550 LOAD_GLOBAL NULL + @pytest_ar
+562 LOAD_ATTR _saferepr
+572 LOAD_FAST @py_assert3
+574 PRECALL 
+578 CALL 
+588 LOAD_CONST 'before'
+590 LOAD_GLOBAL NULL + @py_builtins
+602 LOAD_ATTR locals
+612 PRECALL 
+616 CALL 
+626 CONTAINS_OP 
+628 POP_JUMP_FORWARD_IF_TRUE to 670
+630 LOAD_GLOBAL NULL + @pytest_ar
+642 LOAD_ATTR _should_repr_global_name
+652 LOAD_FAST before
+654 PRECALL 
+658 CALL 
+668 POP_JUMP_FORWARD_IF_FALSE to 710
+670 LOAD_GLOBAL NULL + @pytest_ar
+682 LOAD_ATTR _saferepr
+692 LOAD_FAST before
+694 PRECALL 
+698 CALL 
+708 JUMP_FORWARD to 712
+710 LOAD_CONST 'before'
+712 LOAD_CONST ('py0', 'py2', 'py4', 'py6')
+714 BUILD_CONST_KEY_MAP 
+716 BINARY_OP %
+720 STORE_FAST @py_format7
+722 LOAD_CONST 'assert %(py8)s'
+724 LOAD_CONST 'py8'
+726 LOAD_FAST @py_format7
+728 BUILD_MAP 
+730 BINARY_OP %
+734 STORE_FAST @py_format9
+736 LOAD_GLOBAL NULL + AssertionError
+748 LOAD_GLOBAL NULL + @pytest_ar
+760 LOAD_ATTR _format_explanation
+770 LOAD_FAST @py_format9
+772 PRECALL 
+776 CALL 
+786 PRECALL 
+790 CALL 
+800 RAISE_VARARGS 
+802 LOAD_CONST None
+804 COPY 
+806 STORE_FAST @py_assert1
+808 COPY 
+810 STORE_FAST @py_assert3
+812 STORE_FAST @py_assert5
+814 LOAD_FAST file
+816 LOAD_METHOD chmod
+838 LOAD_CONST 493
+840 PRECALL 
+844 CALL 
+854 POP_TOP 
+856 LOAD_GLOBAL agent
+868 LOAD_ATTR snapshot_workspace
+878 STORE_FAST @py_assert1
+880 PUSH_NULL 
+882 LOAD_FAST @py_assert1
+884 PRECALL 
+888 CALL 
+898 STORE_FAST @py_assert3
+900 LOAD_FAST @py_assert3
+902 LOAD_FAST before
+904 COMPARE_OP !=
+910 STORE_FAST @py_assert5
+912 LOAD_FAST @py_assert5
+914 POP_JUMP_FORWARD_IF_TRUE to 1400
+916 LOAD_GLOBAL NULL + @pytest_ar
+928 LOAD_ATTR _call_reprcompare
+938 LOAD_CONST ('!=',)
+940 LOAD_FAST @py_assert5
+942 BUILD_TUPLE 
+944 LOAD_CONST ('%(py4)s\n{%(py4)s = %(py2)s\n{%(py2)s = %(py0)s.snapshot_workspace\n}()\n} != %(py6)s',)
+946 LOAD_FAST @py_assert3
+948 LOAD_FAST before
+950 BUILD_TUPLE 
+952 PRECALL 
+956 CALL 
+966 LOAD_CONST 'agent'
+968 LOAD_GLOBAL NULL + @py_builtins
+980 LOAD_ATTR locals
+990 PRECALL 
+994 CALL 
+1004 CONTAINS_OP 
+1006 POP_JUMP_FORWARD_IF_TRUE to 1058
+1008 LOAD_GLOBAL NULL + @pytest_ar
+1020 LOAD_ATTR _should_repr_global_name
+1030 LOAD_GLOBAL agent
+1042 PRECALL 
+1046 CALL 
+1056 POP_JUMP_FORWARD_IF_FALSE to 1108
+1058 LOAD_GLOBAL NULL + @pytest_ar
+1070 LOAD_ATTR _saferepr
+1080 LOAD_GLOBAL agent
+1092 PRECALL 
+1096 CALL 
+1106 JUMP_FORWARD to 1110
+1108 LOAD_CONST 'agent'
+1110 LOAD_GLOBAL NULL + @pytest_ar
+1122 LOAD_ATTR _saferepr
+1132 LOAD_FAST @py_assert1
+1134 PRECALL 
+1138 CALL 
+1148 LOAD_GLOBAL NULL + @pytest_ar
+1160 LOAD_ATTR _saferepr
+1170 LOAD_FAST @py_assert3
+1172 PRECALL 
+1176 CALL 
+1186 LOAD_CONST 'before'
+1188 LOAD_GLOBAL NULL + @py_builtins
+1200 LOAD_ATTR locals
+1210 PRECALL 
+1214 CALL 
+1224 CONTAINS_OP 
+1226 POP_JUMP_FORWARD_IF_TRUE to 1268
+1228 LOAD_GLOBAL NULL + @pytest_ar
+1240 LOAD_ATTR _should_repr_global_name
+1250 LOAD_FAST before
+1252 PRECALL 
+1256 CALL 
+1266 POP_JUMP_FORWARD_IF_FALSE to 1308
+1268 LOAD_GLOBAL NULL + @pytest_ar
+1280 LOAD_ATTR _saferepr
+1290 LOAD_FAST before
+1292 PRECALL 
+1296 CALL 
+1306 JUMP_FORWARD to 1310
+1308 LOAD_CONST 'before'
+1310 LOAD_CONST ('py0', 'py2', 'py4', 'py6')
+1312 BUILD_CONST_KEY_MAP 
+1314 BINARY_OP %
+1318 STORE_FAST @py_format7
+1320 LOAD_CONST 'assert %(py8)s'
+1322 LOAD_CONST 'py8'
+1324 LOAD_FAST @py_format7
+1326 BUILD_MAP 
+1328 BINARY_OP %
+1332 STORE_FAST @py_format9
+1334 LOAD_GLOBAL NULL + AssertionError
+1346 LOAD_GLOBAL NULL + @pytest_ar
+1358 LOAD_ATTR _format_explanation
+1368 LOAD_FAST @py_format9
+1370 PRECALL 
+1374 CALL 
+1384 PRECALL 
+1388 CALL 
+1398 RAISE_VARARGS 
+1400 LOAD_CONST None
+1402 COPY 
+1404 STORE_FAST @py_assert1
+1406 COPY 
+1408 STORE_FAST @py_assert3
+1410 STORE_FAST @py_assert5
+1412 LOAD_FAST file
+1414 LOAD_METHOD unlink
+1436 PRECALL 
+1440 CALL 
+1450 POP_TOP 
+1452 LOAD_GLOBAL agent
+1464 LOAD_ATTR snapshot_workspace
+1474 STORE_FAST @py_assert1
+1476 PUSH_NULL 
+1478 LOAD_FAST @py_assert1
+1480 PRECALL 
+1484 CALL 
+1494 STORE_FAST @py_assert3
+1496 BUILD_MAP 
+1498 STORE_FAST @py_assert6
+1500 LOAD_FAST @py_assert3
+1502 LOAD_FAST @py_assert6
+1504 COMPARE_OP ==
+1510 STORE_FAST @py_assert5
+1512 LOAD_FAST @py_assert5
+1514 POP_JUMP_FORWARD_IF_TRUE to 1914
+1516 LOAD_GLOBAL NULL + @pytest_ar
+1528 LOAD_ATTR _call_reprcompare
+1538 LOAD_CONST ('==',)
+1540 LOAD_FAST @py_assert5
+1542 BUILD_TUPLE 
+1544 LOAD_CONST ('%(py4)s\n{%(py4)s = %(py2)s\n{%(py2)s = %(py0)s.snapshot_workspace\n}()\n} == %(py7)s',)
+1546 LOAD_FAST @py_assert3
+1548 LOAD_FAST @py_assert6
+1550 BUILD_TUPLE 
+1552 PRECALL 
+1556 CALL 
+1566 LOAD_CONST 'agent'
+1568 LOAD_GLOBAL NULL + @py_builtins
+1580 LOAD_ATTR locals
+1590 PRECALL 
+1594 CALL 
+1604 CONTAINS_OP 
+1606 POP_JUMP_FORWARD_IF_TRUE to 1658
+1608 LOAD_GLOBAL NULL + @pytest_ar
+1620 LOAD_ATTR _should_repr_global_name
+1630 LOAD_GLOBAL agent
+1642 PRECALL 
+1646 CALL 
+1656 POP_JUMP_FORWARD_IF_FALSE to 1708
+1658 LOAD_GLOBAL NULL + @pytest_ar
+1670 LOAD_ATTR _saferepr
+1680 LOAD_GLOBAL agent
+1692 PRECALL 
+1696 CALL 
+1706 JUMP_FORWARD to 1710
+1708 LOAD_CONST 'agent'
+1710 LOAD_GLOBAL NULL + @pytest_ar
+1722 LOAD_ATTR _saferepr
+1732 LOAD_FAST @py_assert1
+1734 PRECALL 
+1738 CALL 
+1748 LOAD_GLOBAL NULL + @pytest_ar
+1760 LOAD_ATTR _saferepr
+1770 LOAD_FAST @py_assert3
+1772 PRECALL 
+1776 CALL 
+1786 LOAD_GLOBAL NULL + @pytest_ar
+1798 LOAD_ATTR _saferepr
+1808 LOAD_FAST @py_assert6
+1810 PRECALL 
+1814 CALL 
+1824 LOAD_CONST ('py0', 'py2', 'py4', 'py7')
+1826 BUILD_CONST_KEY_MAP 
+1828 BINARY_OP %
+1832 STORE_FAST @py_format8
+1834 LOAD_CONST 'assert %(py9)s'
+1836 LOAD_CONST 'py9'
+1838 LOAD_FAST @py_format8
+1840 BUILD_MAP 
+1842 BINARY_OP %
+1846 STORE_FAST @py_format10
+1848 LOAD_GLOBAL NULL + AssertionError
+1860 LOAD_GLOBAL NULL + @pytest_ar
+1872 LOAD_ATTR _format_explanation
+1882 LOAD_FAST @py_format10
+1884 PRECALL 
+1888 CALL 
+1898 PRECALL 
+1902 CALL 
+1912 RAISE_VARARGS 
+1914 LOAD_CONST None
+1916 COPY 
+1918 STORE_FAST @py_assert1
+1920 COPY 
+1922 STORE_FAST @py_assert3
+1924 COPY 
+1926 STORE_FAST @py_assert5
+1928 STORE_FAST @py_assert6
+1930 LOAD_CONST None
+1932 RETURN_VALUE 
+
+### FUNC test_invalidate_uses_dictionary_and_reopens_tasks
+0 RESUME 
+2 LOAD_GLOBAL NULL + verified_state
+14 PRECALL 
+18 CALL 
+28 STORE_FAST state
+30 LOAD_GLOBAL agent
+42 LOAD_METHOD invalidate_evidence
+64 LOAD_FAST state
+66 PRECALL 
+70 CALL 
+80 POP_TOP 
+82 LOAD_FAST state
+84 LOAD_ATTR evidence
+94 STORE_FAST @py_assert1
+96 BUILD_MAP 
+98 STORE_FAST @py_assert4
+100 LOAD_FAST @py_assert1
+102 LOAD_FAST @py_assert4
+104 COMPARE_OP ==
+110 STORE_FAST @py_assert3
+112 LOAD_FAST @py_assert3
+114 POP_JUMP_FORWARD_IF_TRUE to 456
+116 LOAD_GLOBAL NULL + @pytest_ar
+128 LOAD_ATTR _call_reprcompare
+138 LOAD_CONST ('==',)
+140 LOAD_FAST @py_assert3
+142 BUILD_TUPLE 
+144 LOAD_CONST ('%(py2)s\n{%(py2)s = %(py0)s.evidence\n} == %(py5)s',)
+146 LOAD_FAST @py_assert1
+148 LOAD_FAST @py_assert4
+150 BUILD_TUPLE 
+152 PRECALL 
+156 CALL 
+166 LOAD_CONST 'state'
+168 LOAD_GLOBAL NULL + @py_builtins
+180 LOAD_ATTR locals
+190 PRECALL 
+194 CALL 
+204 CONTAINS_OP 
+206 POP_JUMP_FORWARD_IF_TRUE to 248
+208 LOAD_GLOBAL NULL + @pytest_ar
+220 LOAD_ATTR _should_repr_global_name
+230 LOAD_FAST state
+232 PRECALL 
+236 CALL 
+246 POP_JUMP_FORWARD_IF_FALSE to 288
+248 LOAD_GLOBAL NULL + @pytest_ar
+260 LOAD_ATTR _saferepr
+270 LOAD_FAST state
+272 PRECALL 
+276 CALL 
+286 JUMP_FORWARD to 290
+288 LOAD_CONST 'state'
+290 LOAD_GLOBAL NULL + @pytest_ar
+302 LOAD_ATTR _saferepr
+312 LOAD_FAST @py_assert1
+314 PRECALL 
+318 CALL 
+328 LOAD_GLOBAL NULL + @pytest_ar
+340 LOAD_ATTR _saferepr
+350 LOAD_FAST @py_assert4
+352 PRECALL 
+356 CALL 
+366 LOAD_CONST ('py0', 'py2', 'py5')
+368 BUILD_CONST_KEY_MAP 
+370 BINARY_OP %
+374 STORE_FAST @py_format6
+376 LOAD_CONST 'assert %(py7)s'
+378 LOAD_CONST 'py7'
+380 LOAD_FAST @py_format6
+382 BUILD_MAP 
+384 BINARY_OP %
+388 STORE_FAST @py_format8
+390 LOAD_GLOBAL NULL + AssertionError
+402 LOAD_GLOBAL NULL + @pytest_ar
+414 LOAD_ATTR _format_explanation
+424 LOAD_FAST @py_format8
+426 PRECALL 
+430 CALL 
+440 PRECALL 
+444 CALL 
+454 RAISE_VARARGS 
+456 LOAD_CONST None
+458 COPY 
+460 STORE_FAST @py_assert1
+462 COPY 
+464 STORE_FAST @py_assert3
+466 STORE_FAST @py_assert4
+468 LOAD_GLOBAL agent
+480 LOAD_ATTR is_task_complete
+490 STORE_FAST @py_assert1
+492 PUSH_NULL 
+494 LOAD_FAST @py_assert1
+496 LOAD_FAST state
+498 PRECALL 
+502 CALL 
+512 STORE_FAST @py_assert4
+514 LOAD_FAST @py_assert4
+516 UNARY_NOT 
+518 STORE_FAST @py_assert6
+520 LOAD_FAST @py_assert6
+522 POP_JUMP_FORWARD_IF_TRUE to 946
+524 LOAD_CONST 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}'
+526 LOAD_CONST 'agent'
+528 LOAD_GLOBAL NULL + @py_builtins
+540 LOAD_ATTR locals
+550 PRECALL 
+554 CALL 
+564 CONTAINS_OP 
+566 POP_JUMP_FORWARD_IF_TRUE to 618
+568 LOAD_GLOBAL NULL + @pytest_ar
+580 LOAD_ATTR _should_repr_global_name
+590 LOAD_GLOBAL agent
+602 PRECALL 
+606 CALL 
+616 POP_JUMP_FORWARD_IF_FALSE to 668
+618 LOAD_GLOBAL NULL + @pytest_ar
+630 LOAD_ATTR _saferepr
+640 LOAD_GLOBAL agent
+652 PRECALL 
+656 CALL 
+666 JUMP_FORWARD to 670
+668 LOAD_CONST 'agent'
+670 LOAD_GLOBAL NULL + @pytest_ar
+682 LOAD_ATTR _saferepr
+692 LOAD_FAST @py_assert1
+694 PRECALL 
+698 CALL 
+708 LOAD_CONST 'state'
+710 LOAD_GLOBAL NULL + @py_builtins
+722 LOAD_ATTR locals
+732 PRECALL 
+736 CALL 
+746 CONTAINS_OP 
+748 POP_JUMP_FORWARD_IF_TRUE to 790
+750 LOAD_GLOBAL NULL + @pytest_ar
+762 LOAD_ATTR _should_repr_global_name
+772 LOAD_FAST state
+774 PRECALL 
+778 CALL 
+788 POP_JUMP_FORWARD_IF_FALSE to 830
+790 LOAD_GLOBAL NULL + @pytest_ar
+802 LOAD_ATTR _saferepr
+812 LOAD_FAST state
+814 PRECALL 
+818 CALL 
+828 JUMP_FORWARD to 832
+830 LOAD_CONST 'state'
+832 LOAD_GLOBAL NULL + @pytest_ar
+844 LOAD_ATTR _saferepr
+854 LOAD_FAST @py_assert4
+856 PRECALL 
+860 CALL 
+870 LOAD_CONST ('py0', 'py2', 'py3', 'py5')
+872 BUILD_CONST_KEY_MAP 
+874 BINARY_OP %
+878 STORE_FAST @py_format7
+880 LOAD_GLOBAL NULL + AssertionError
+892 LOAD_GLOBAL NULL + @pytest_ar
+904 LOAD_ATTR _format_explanation
+914 LOAD_FAST @py_format7
+916 PRECALL 
+920 CALL 
+930 PRECALL 
+934 CALL 
+944 RAISE_VARARGS 
+946 LOAD_CONST None
+948 COPY 
+950 STORE_FAST @py_assert1
+952 COPY 
+954 STORE_FAST @py_assert4
+956 STORE_FAST @py_assert6
+958 LOAD_CONST None
+960 RETURN_VALUE 

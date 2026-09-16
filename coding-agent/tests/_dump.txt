@@ -1,0 +1,89 @@
+======================================== test_refactor_migration.cpython-311-pytest-9.1.1.pyc
+CODE <module> args=()
+  consts=['One-off migration helper for splitting ``coding_agent.main`` into modules.\n\nThis module is a temporary refactoring tool.  It copies the existing\n``src/coding_agent/main.py`` content line-for-line (line ranges are located\nthrough ``ast``) into a layered module layout and proves with ``ast`` that\nevery function and every module-level constant stays unchanged.  After the\nfiles have been written it removes itself from the repository.\n', 0, 1, 'src', 'coding_agent', 'main.py', 9, 'client', 'config.py', 'WORKSPACE', 'MODEL', 'MAX_MODEL_TURNS', 'MAX_TOOL_CALLS', 'MAX_CONTEXT_TURNS', 'KEEP_RECENT_TURNS', 'MAX_CONTEXT_TOKENS', 'RESERVED_OUTPUT_TOKENS', 'SAFETY_MARGIN_TOKENS', 'MAX_TOOL_OUTPUT_CHARS', 'DEFAULT_READ_LINES', 'MAX_READ_LINES', 'MAX_SEARCH_RESULTS', 'MAX_SUMMARY_CHARS', 'SYSTEM_PROMPT', 'BLOCKED_COMMANDS', 'TOOLS', 'tools/schemas.py', 'TOOL_PERMISSIONS', 'resolve_path', 'tools/filesystem.py', 'list_files', 'read_file', 'search_text', 'write_file', 'replace_text', 'ask_for_confirmation', 'tools/commands.py', 'run_command', 'format_command_result', 'execute_tool', 'tools/executor.py', 'format_plan', 'planning.py', 'update_task', 'set_plan', 'get_plan', 'record_command_evidence', 'invalidate_evidence', 'mark_workspace_changed', 'has_valid_evidence', 'get_unfinished_tasks', 'has_blocked_tasks', 'is_task_complete', 'get_completion_status', 'build_model_input', 'context.py', 'format_runtime_state', 'turn_to_text', 'history_to_text', 'summarize_history', 'compress_history', 'truncate_text', 'truncate_tail', 'get_input_token_budget', 'estimate_tokens', 'agent.py', 'cli.py', 'permission.py', 'task_state.py', 'from dataclasses import asdict', 'import json', 'from openai import OpenAI', 'from pathlib import Path', 'import shlex', 'import subprocess', 'Configuration, shared constants and the model client.', 'Todo plan, evidence tracking and completion status.', 'Context building, history summarization and token budgeting.', 'Agent runtime loop (model calls, tool calls, completion).', 'Interactive command line interface.', 'Tool schemas exposed to the model and their permission levels.', 'Filesystem tools restricted to the workspace.', 'Command execution, user confirmation and result formatting.', 'Executes a single tool call requested by the model.', '"""Tool layer: schemas, filesystem tools, command tools, executor."""\n', '"""Entry point for the ``coding-agent`` command line application."""\n\nfrom .cli import main\n\n__all__ = ["main"]\n', False]
+  names=('__doc__', '__future__', 'annotations', 'builtins', '@py_builtins', '_pytest.assertion.rewrite', 'assertion', 'rewrite', '@pytest_ar', 'ast', 'pathlib', 'Path', '__file__', 'resolve', 'parents', 'PACKAGE_DIR', 'ORIGINAL_MAIN', 'IMPORT_LINES', 'TARGETS', 'EXTERNAL_SOURCES', 'STDLIB_IMPORTS', 'DOCSTRINGS', 'TOOLS_INIT', 'MAIN_SHIM', '_generated', '_definitions', '_bound_names', '_free_names', '_leading_comment_start', '_render_imports', '_collect_segments', '_build_contents', '_verify', 'test_split_main_into_modules', 'test_remove_migration_helper')
+  CODE _definitions args=('tree', 'funcs', 'assigns', 'node', 'target')
+    consts=[]
+    names=('body', 'isinstance', 'ast', 'FunctionDef', 'AsyncFunctionDef', 'name', 'Assign', 'targets', 'Name', 'id')
+  CODE _bound_names args=('node', 'bound', 'child', 'alias')
+    consts=['.', 0]
+    names=('set', 'ast', 'walk', 'isinstance', 'arg', 'add', 'Name', 'ctx', 'Store', 'Del', 'id', 'Import', 'ImportFrom', 'names', 'asname', 'name', 'split', 'ExceptHandler', 'Global', 'update')
+  CODE _free_names args=('node', 'used')
+    consts=[]
+    names=('ast', 'walk', '_bound_names', 'set', 'dir', 'builtins')
+    CODE <setcomp> args=('.0', 'child')
+      consts=[]
+      names=('isinstance', 'ast', 'Name', 'ctx', 'Load', 'id')
+  CODE _leading_comment_start args=('lines', 'lineno', 'start', 'index')
+    consts=[2, 0, '#', 1]
+    names=('lstrip', 'startswith')
+  CODE _render_imports args=('module_path', 'needed', 'depth', 'stdlib', 'internal', 'name', '@py_assert1', '@py_assert3', '@py_assert0', '@py_assert9', '@py_format5', '@py_format7', '@py_format11', '@py_format13', '@py_format14', '@py_format16', 'source', 'lines', 'names', 'dotted', 'prefix', 'ordered', 'body')
+    consts=['/', 'name', 'TARGETS', '%(py6)s', 'py6', 'EXTERNAL_SOURCES', '%(py12)s', 'py12', 1, 'unknown global ', ' used by ', '\n>assert %(py15)s', 'py15', -3, '.', 'from ', ' import ', 0, '\n', ' import (\n', '\n)']
+    names=('count', 'set', 'sorted', 'STDLIB_IMPORTS', 'add', 'TARGETS', 'EXTERNAL_SOURCES', '@pytest_ar', '_call_reprcompare', '@py_builtins', 'locals', '_should_repr_global_name', '_saferepr', 'append', '_format_boolop', '_format_assertmsg', 'AssertionError', '_format_explanation', 'get', 'setdefault', 'items', 'replace', 'len', 'join')
+    CODE <genexpr> args=('.0', 'name')
+      consts=['    ', ',']
+      names=()
+  CODE _collect_segments args=('lines', 'tree', 'funcs', 'assigns', 'unmapped', '@py_assert1', '@py_format2', 'unknown_targets', 'segments', 'name', 'node', 'start', 'previous_end', 'end', '_node', '@py_format3', '@py_format5', '_name', 'uncovered')
+    consts=['top-level names without a target module: ', '\n>assert not %(py0)s', 'py0', 'unmapped', 'targets without a definition: ', 'unknown_targets', 0, 'start', 'previous_end', 'overlapping segment for ', ' at ', '\n>assert %(py4)s', 'py4', 1, 'code lines that would not be migrated: ', 'uncovered']
+    names=('_definitions', 'sorted', 'set', 'TARGETS', '@pytest_ar', '_format_assertmsg', '@py_builtins', 'locals', '_should_repr_global_name', '_saferepr', 'AssertionError', '_format_explanation', 'list', 'items', '_leading_comment_start', 'lineno', 'append', 'end_lineno', 'sort', '_call_reprcompare', 'update', 'range', 'IMPORT_LINES', 'len')
+    CODE <listcomp> args=('.0', 'number')
+      consts=[1]
+      names=('strip',)
+  CODE _build_contents args=('lines', 'segments', 'modules', 'segment', 'contents', 'module_path', 'module_segments', 'defined', 'used', '_start', '_end', '_name', 'node', 'body', 'text', 'imports')
+    consts=[2, '\n\n\n', '"""', '"""\n', '\n']
+    names=('setdefault', 'TARGETS', 'append', 'items', 'set', '_free_names', 'join', 'DOCSTRINGS', '_render_imports')
+    CODE <setcomp> args=('.0', '_start', '_end', 'name', '_node')
+      consts=[]
+      names=()
+    CODE <genexpr> args=('.0', 'start', 'end', '_name', '_node')
+      consts=['\n', 1]
+      names=('join', 'rstrip')
+  CODE _verify args=('original_tree', 'contents', 'original_funcs', 'original_assigns', 'found_funcs', 'found_assigns', 'module_path', 'text', 'tree', 'funcs', 'assigns', 'name', 'node', '@py_assert1', '@py_format3', '@py_format5', '@py_assert2', '@py_assert7', '@py_assert4', '@py_format9', '@py_format11', '@py_assert8', '@py_assert10', '@py_assert12', '@py_assert6', '@py_format14', '@py_format16')
+    consts=['name', 'found_funcs', 'duplicate function: ', '\n>assert %(py4)s', 'py4', 'found_assigns', 'duplicate assignment: ', 'set', 'original_funcs', 'function mismatch: ', '\n>assert %(py10)s', 'py10', 'original_assigns', 'assignment mismatch: ', 'ast', 'node', 'changed function: ', '\n>assert %(py15)s', 'py15', 'changed assignment: ']
+    names=('_definitions', 'items', 'ast', 'parse', '@pytest_ar', '_call_reprcompare', '@py_builtins', 'locals', '_should_repr_global_name', '_saferepr', '_format_assertmsg', 'AssertionError', '_format_explanation', 'set', 'sorted', 'dump')
+  CODE test_split_main_into_modules args=('source', 'lines', 'original_tree', 'segments', 'contents', 'moved', 'module_path', 'text', 'target', 'tools_init', '@py_assert2', '@py_assert5', '@py_assert4', '@py_format7', '@py_format9')
+    consts=['utf-8', True, 'wrote ', 'tools', '__init__.py', 'rewrote ', 44, 'len', 'moved', '\n>assert %(py8)s', 'py8']
+    names=('ORIGINAL_MAIN', 'read_text', 'splitlines', 'ast', 'parse', '_collect_segments', '_build_contents', '_verify', 'sorted', 'items', 'PACKAGE_DIR', 'parent', 'mkdir', 'write_text', 'print', 'TOOLS_INIT', 'MAIN_SHIM', 'len', '@pytest_ar', '_call_reprcompare', '@py_builtins', 'locals', '_should_repr_global_name', '_saferepr', '_format_assertmsg', 'AssertionError', '_format_explanation', '_generated')
+  CODE test_remove_migration_helper args=('helper',)
+    consts=['removed ']
+    names=('_generated', 'Path', '__file__', 'resolve', 'unlink', 'print')
+======================================== test_workspace_revision.cpython-311-pytest-9.1.1.pyc
+CODE <module> args=()
+  consts=[0, 'coding_agent.main', 'outcome']
+  names=('builtins', '@py_builtins', '_pytest.assertion.rewrite', 'assertion', 'rewrite', '@pytest_ar', 'importlib', 'pytest', 'import_module', 'agent', 'EvidenceType', 'TESTS_PASSED', 'TESTS', 'verified_state', 'test_edit_reopens_completed_verification', 'test_completion_rechecks_stale_evidence', 'test_failed_verification_revokes_pass', 'test_plain_git_diff_records_evidence', 'mark', 'parametrize', 'test_commands_detect_changes_even_on_failure', 'test_command_without_changes', 'test_file_tools_only_increment_on_change', 'test_snapshot_tracks_delete_mode_and_ignores_cache', 'test_invalidate_uses_dictionary_and_reopens_tasks')
+  CODE verified_state args=()
+    consts=[1, 'Run tests', 0]
+    names=('agent', 'AgentState', 'TodoItem', 'TaskStatus', 'COMPLETED', 'TESTS')
+  CODE test_edit_reopens_completed_verification args=('state', '@py_assert1', '@py_assert4', '@py_assert3', '@py_format6', '@py_format8', '@py_assert5', '@py_assert7', '@py_assert0', '@py_assert2', '@py_assert6', '@py_assert8', '@py_format10', '@py_format12', '@py_assert10', '@py_format14')
+    consts=[1, 'state', 'assert %(py7)s', 'py7', 'assert not %(py6)s\n{%(py6)s = %(py2)s\n{%(py2)s = %(py0)s.has_valid_evidence\n}(%(py3)s, %(py4)s)\n}', 'agent', 'TESTS', 0, 'assert %(py11)s', 'py11', 'assert %(py13)s', 'py13']
+    names=('verified_state', 'agent', 'mark_workspace_changed', 'workspace_revision', '@pytest_ar', '_call_reprcompare', '@py_builtins', 'locals', '_should_repr_global_name', '_saferepr', 'AssertionError', '_format_explanation', 'has_valid_evidence', 'TESTS', 'todos', 'status', 'TaskStatus', 'PENDING', 'get_completion_status', 'CompletionStatus', 'INCOMPLETE')
+  CODE test_completion_rechecks_stale_evidence args=('state', '@py_assert1', '@py_assert4', '@py_assert6', '@py_format7', '@py_assert8', '@py_assert10', '@py_format12', '@py_format14')
+    consts=[1, 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}', 'agent', 'state', 'assert %(py13)s', 'py13']
+    names=('verified_state', 'workspace_revision', 'agent', 'is_task_complete', '@py_builtins', 'locals', '@pytest_ar', '_should_repr_global_name', '_saferepr', 'AssertionError', '_format_explanation', 'get_completion_status', 'CompletionStatus', 'INCOMPLETE', '_call_reprcompare')
+  CODE test_failed_verification_revokes_pass args=('state', '@py_assert1', '@py_assert5', '@py_assert7', '@py_format8', '@py_assert4', '@py_assert6', '@py_format7')
+    consts=['pytest', '', 1, 'assert not %(py6)s\n{%(py6)s = %(py2)s\n{%(py2)s = %(py0)s.has_valid_evidence\n}(%(py3)s, %(py4)s)\n}', 'agent', 'state', 'TESTS', 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}']
+    names=('verified_state', 'agent', 'record_command_evidence', 'CommandResult', 'has_valid_evidence', 'TESTS', '@py_builtins', 'locals', '@pytest_ar', '_should_repr_global_name', '_saferepr', 'AssertionError', '_format_explanation', 'is_task_complete')
+  CODE test_plain_git_diff_records_evidence args=('state', '@py_assert0', '@py_assert3', '@py_assert2', '@py_format5', '@py_format7')
+    consts=[3, 'git diff', '', 0, 'assert %(py6)s', 'py6']
+    names=('agent', 'AgentState', 'record_command_evidence', 'CommandResult', 'evidence', 'EvidenceType', 'DIFF_INSPECTED', '@pytest_ar', '_call_reprcompare', '_saferepr', 'AssertionError', '_format_explanation')
+  CODE test_commands_detect_changes_even_on_failure args=('tmp_path', 'monkeypatch', 'outcome', 'state', 'command', '@py_assert1', '@py_assert4', '@py_assert3', '@py_format6', '@py_format8', '@py_assert5', '@py_assert7', '@py_assert6', '@py_format7')
+    consts=['WORKSPACE', 'run_command', 'command', 'pytest', 1, 'state', 'assert %(py7)s', 'py7', 'assert not %(py6)s\n{%(py6)s = %(py2)s\n{%(py2)s = %(py0)s.has_valid_evidence\n}(%(py3)s, %(py4)s)\n}', 'agent', 'TESTS', 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}']
+    names=('setattr', 'agent', 'verified_state', 'execute_tool', 'workspace_revision', '@pytest_ar', '_call_reprcompare', '@py_builtins', 'locals', '_should_repr_global_name', '_saferepr', 'AssertionError', '_format_explanation', 'has_valid_evidence', 'TESTS', 'is_task_complete')
+    CODE command args=('kwargs',)
+      consts=['new.py', 'changed', 'exception', 'failed', 'timeout', 'Command timed out', 'command', '']
+      names=('write_text', 'RuntimeError', 'agent', 'CommandResult')
+  CODE test_command_without_changes args=('tmp_path', 'monkeypatch', 'outcome', 'state', '@py_assert1', '@py_assert4', '@py_assert3', '@py_format6', '@py_format8', '@py_assert9', '@py_assert8', '@py_assert6', '@py_format11', '@py_format13', '@py_format15')
+    consts=['WORKSPACE', 'timeout', 'Command timed out', 'pytest', '', 'run_command', 'command', 0, 'state', 'assert %(py7)s', 'py7', 'outcome', 'agent', 'assert %(py14)s', 'py14']
+    names=('setattr', 'agent', 'verified_state', 'CommandResult', 'execute_tool', 'workspace_revision', '@pytest_ar', '_call_reprcompare', '@py_builtins', 'locals', '_should_repr_global_name', '_saferepr', 'AssertionError', '_format_explanation', 'is_task_complete')
+    CODE <lambda> args=('kwargs',)
+      consts=[]
+      names=()
+  CODE test_file_tools_only_increment_on_change args=('tmp_path', 'monkeypatch', 'state', 'args', '@py_assert1', '@py_assert4', '@py_assert3', '@py_format6', '@py_format8')
+    consts=['WORKSPACE', 'file.py', 'hello', 'write_file', 1, 'state', 'assert %(py7)s', 'py7', 'world', 'replace_text', 2]
+    names=('setattr', 'agent', 'AgentState', 'execute_tool', 'workspace_revision', '@pytest_ar', '_call_reprcompare', '@py_builtins', 'locals', '_should_repr_global_name', '_saferepr', 'AssertionError', '_format_explanation')
+  CODE test_snapshot_tracks_delete_mode_and_ignores_cache args=('tmp_path', 'monkeypatch', 'file', 'before', 'cache', '@py_assert1', '@py_assert3', '@py_assert5', '@py_format7', '@py_format9', '@py_assert6', '@py_format8', '@py_format10')
+    consts=['WORKSPACE', 'app.py', 'hello', '__pycache__', 'app.pyc', b'cache', 'agent', 'before', 'assert %(py8)s', 'py8', 493, 'assert %(py9)s', 'py9']
+    names=('setattr', 'agent', 'write_text', 'snapshot_workspace', 'mkdir', 'write_bytes', '@pytest_ar', '_call_reprcompare', '@py_builtins', 'locals', '_should_repr_global_name', '_saferepr', 'AssertionError', '_format_explanation', 'chmod', 'unlink')
+  CODE test_invalidate_uses_dictionary_and_reopens_tasks args=('state', '@py_assert1', '@py_assert4', '@py_assert3', '@py_format6', '@py_format8', '@py_assert6', '@py_format7')
+    consts=['state', 'assert %(py7)s', 'py7', 'assert not %(py5)s\n{%(py5)s = %(py2)s\n{%(py2)s = %(py0)s.is_task_complete\n}(%(py3)s)\n}', 'agent']
+    names=('verified_state', 'agent', 'invalidate_evidence', 'evidence', '@pytest_ar', '_call_reprcompare', '@py_builtins', 'locals', '_should_repr_global_name', '_saferepr', 'AssertionError', '_format_explanation', 'is_task_complete')
