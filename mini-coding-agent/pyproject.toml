@@ -11,6 +11,12 @@ dependencies = [
     "openai>=3.14.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+]
+
 [project.scripts]
 mini-coding-agent = "mini_coding_agent.main:main"
 

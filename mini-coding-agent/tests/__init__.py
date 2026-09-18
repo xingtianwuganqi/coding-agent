@@ -1,0 +1,1 @@
+"""Tests for mini-coding-agent package."""
