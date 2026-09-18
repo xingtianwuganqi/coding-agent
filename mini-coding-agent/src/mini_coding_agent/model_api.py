@@ -2,8 +2,26 @@
 
 import os
 import json
+from pathlib import Path
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessage
+
+
+def _load_local_env() -> None:
+    """Load project-local API keys without overriding exported variables."""
+    env_path = Path(__file__).resolve().parents[2] / ".env"
+    if not env_path.is_file():
+        return
+
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_local_env()
 
 # Change only this value, then restart the agent: "zhipu" or "deepseek".
 PROVIDER = "deepseek"
@@ -12,27 +30,27 @@ PROVIDERS = {
     "zhipu": {
         "base_url": "https://open.bigmodel.cn/api/paas/v4/",
         "model": "glm-4.7",
-        "api_key": os.getenv("ZHIPU_API_KEY", '7eb19ed5b41c4acbb18c68346448ef79.JiIVOlOXKnDkjHpY'),
+        "api_key": os.getenv("ZHIPU_API_KEY"),
     },
     "deepseek": {
         "base_url": "https://api.deepseek.com",
         "model": "deepseek-flash",
-        "api_key": os.getenv("DEEPSEEK_API_KEY", 'sk-3cb0a38c5ece4d58a6941ddfdee85c5d'),
+        "api_key": os.getenv("DEEPSEEK_API_KEY"),
     },
     "groq": {
         "base_url": "https://api.groq.com/openai/v1",
         "model": "qwen/qwen3.8-27b",
-        "api_key": os.getenv("GROQ_API", "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"),
+        "api_key": os.getenv("GROQ_API"),
     },
     "gemini": {
         "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
         "model": "gemini-3.5-flash",
-        "api_key": os.getenv("GEMINI_API", "AQ.Ab8RN6KlEI4u25V8VD2gY34xZ2MXmgVHrrw8-iUSdAZavNz7xQ")
+        "api_key": os.getenv("GEMINI_API")
     },
     "openrouter": {
         "base_url": "https://openrouter.ai/api/v1",
         "model": "qwen/qwen3.8-27b:free",
-        "api_key": os.getenv("OPENROUTER_API", "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")
+        "api_key": os.getenv("OPENROUTER_API")
     }
 }
 
@@ -49,6 +67,10 @@ def call_model(
     if PROVIDER not in PROVIDERS:
         raise ValueError(f"Unknown model provider: {PROVIDER}")
     settings = PROVIDERS[PROVIDER]
+    if not settings["api_key"]:
+        raise RuntimeError(
+            f"Missing API key for {PROVIDER}. Set the required value in .env."
+        )
     request = {"model": settings["model"], "messages": list(messages)}
     if instructions:
         request["messages"].insert(0, {"role": "system", "content": instructions})
