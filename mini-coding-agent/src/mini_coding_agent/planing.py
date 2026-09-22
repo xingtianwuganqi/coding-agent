@@ -6,6 +6,28 @@ from .evidence import (
 from .evidence import (
     has_valid_evidence
 )
+
+from .agent_metrics import(
+    AgentMetrics
+)
+
+from .tool_result import ToolResult
+from .verification import VerificationRecord
+
+# 最大停滞转数
+MAX_STAGNANT_TURNS = 5
+
+@dataclass
+class FailureState:
+    last_signature: str | None = None
+    consecutive_count: int = 0
+
+@dataclass
+class VerificationState:
+    records: list[VerificationRecord] = field(
+        default_factory=list
+    )
+
 class TaskStatus(Enum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
@@ -30,9 +52,39 @@ class AgentState:
     evidence: dict[EvidenceType, int] = field(
             default_factory=dict
         )
-    # Versioned Evidence
+    # Versioned Evidence, → 任何文件修改都增加
     workspace_revision: int = 0
     task_summary: str = ""
+    # 预计划检查次数
+    pre_plan_inspection_count: int = 0
+    # 连续检索次数
+    consecutive_retrieval_count: int = 0
+    # 最近调用的工具
+    recent_tool_calls: list[str] = field(
+        default_factory=list
+    )
+
+    # 最近一次真正取得进展，是第几个 Model Turn。
+    last_progress_turn: int = 0
+
+    stagnation_warnings: int = 0
+
+    # 记录同一个错误时不时连续失败
+    failure: FailureState = field(
+        default_factory=FailureState
+    )
+
+    # verification 只有代码文件修改才增加
+    code_revision: int = 0
+    
+    changed_files: set[str] = field(
+        default_factory=set
+    )
+
+    verification: VerificationState = field(
+        default_factory=VerificationState
+    )
+
 
 def format_plan(state: AgentState) -> str:
     if not state.todos:
@@ -73,7 +125,7 @@ def format_plan(state: AgentState) -> str:
 def set_plan(
         state: AgentState,
         items: list[dict]
-) -> str:
+) -> ToolResult:
     """
     设置计划
     """
@@ -94,9 +146,12 @@ def set_plan(
                 )
 
             except ValueError:
-                return (
-                    f"Invalid evidence type:"
-                    f"{evidence_value}"
+                return ToolResult(
+                    success=False,
+                    error=(
+                        f"Invalid evidence type:"
+                        f"{evidence_value}"
+                    )
                 )
 
         todos.append(
@@ -108,21 +163,28 @@ def set_plan(
         )
 
     state.todos = todos
-    return format_plan(state)
+    return ToolResult(
+        success=True,
+        content=format_plan(state)
+    )
 
 def update_task(
         state: AgentState,
+        metrics: AgentMetrics,
         task_id: int,
         status: str,
         note: str = "",
-) -> str:
+) -> ToolResult:
     """
     更新计划
     """
     try:
         new_status = TaskStatus(status)
     except ValueError:
-        return f"Invalid status: {status}"
+        return ToolResult(
+            success=False,
+            error=f"Invalid status: {status}"
+        )
 
     for todo in state.todos:
         if todo.id != task_id:
@@ -139,11 +201,21 @@ def update_task(
                 todo.required_evidence
             )
         ):
-            return (
-                f"Cannot complete task "
-                f"{task_id}.\n"
-                f"Required evidence is missing: "
-                f"{todo.required_evidence.value}"
+            return ToolResult(
+                success=False,
+                error=(
+                    f"Cannot complete task "
+                    f"{task_id}.\n"
+                    f"Required evidence is missing: "
+                    f"{todo.required_evidence.value}"
+                )
+            )
+
+        # 只有状态真正发生改变的时候才记录
+        if todo.status != new_status:
+            record_progress(
+                state=state,
+                turn=metrics.model_turns
             )
         todo.status = new_status
 
@@ -155,18 +227,27 @@ def update_task(
         print("\n--- Current Plan ---")
         print(result)
 
-        return result
+        return ToolResult(
+            success=True,
+            content=result
+        )
 
-    return f"Task not found: {task_id}"
+    return ToolResult(
+        success=False,
+        error=f"Task not found: {task_id}"
+    )
 
 
 def get_plan(
         state: AgentState
-) -> str:
+) -> ToolResult:
     """
     获取计划
     """
-    return format_plan(state)
+    return ToolResult(
+        success=True,
+        content=format_plan(state)
+    )
 
 def print_state_debug(
     state: AgentState,
@@ -197,3 +278,82 @@ def print_state_debug(
             f"revision={revision}, "
             f"valid={valid}"
         )
+
+
+def record_progress(
+        state: AgentState,
+        turn: int,
+) -> None:
+    state.last_progress_turn = turn
+    state.stagnation_warnings = 0
+
+
+def tool_caused_progress(
+    name: str,
+    result: ToolResult,
+) -> bool:
+    '''
+    判断“这次工具调用成功了，但它到底算不算真正推进了任务”。
+    '''
+    if not result.success:
+        return False
+
+    progress_tools = {
+        "write_file",
+        "replace_text",
+        "set_plan",
+        "update_task",
+    }
+
+    return name in progress_tools
+
+
+def is_stagnating(
+        state: AgentState,
+        current_turn: int,
+) -> bool:
+    '''
+    判断是不是进入了停滞
+    '''
+    if not state.todos:
+        return False
+
+    stagnant_turns = (
+        current_turn - state.last_progress_turn
+    )
+
+    return stagnant_turns >= MAX_STAGNANT_TURNS
+
+
+def build_stagnation_feedback(
+        state: AgentState,
+) -> str:
+    '''
+    构建停滞反馈
+    '''
+    active_task = next(
+        (
+            todo 
+            for todo in state.todos
+            if todo.status
+            == TaskStatus.IN_PROGRESS
+        ),
+        None
+    )
+
+    task_text = (
+        active_task.content
+        if active_task
+        else "current task"
+    )
+
+    return (
+        "RUNTIME NOTICE: progress has stalled. "
+        "Several turns have passed without a "
+        "meaningful state change. "
+        f"Current task: {task_text}. "
+        "Use the information already gathered "
+        "to take the next concrete action. "
+        "Do not continue investigating unless "
+        "a specific missing fact blocks progress."
+    )

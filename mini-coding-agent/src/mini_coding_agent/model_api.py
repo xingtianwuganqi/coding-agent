@@ -23,8 +23,8 @@ def _load_local_env() -> None:
 
 _load_local_env()
 
-# Change only this value, then restart the agent: "zhipu" or "deepseek".
-PROVIDER = "deepseek"
+# Change only this value, then restart the agent.
+PROVIDER = "bai"
 
 PROVIDERS = {
     "zhipu": {
@@ -51,6 +51,11 @@ PROVIDERS = {
         "base_url": "https://openrouter.ai/api/v1",
         "model": "qwen/qwen3.8-27b:free",
         "api_key": os.getenv("OPENROUTER_API")
+    },
+    "bai": {
+        "base_url": "https://api.b.ai/v1",
+        "model": "deepseek-v4.1-flash",
+        "api_key": os.getenv("BAI_API_KEY"),
     }
 }
 

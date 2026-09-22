@@ -66,11 +66,11 @@ def get_completion_status(
         state: AgentState,
 ) -> CompletionStatus:
     """
-    
+    获取完成的状态
     """
 
     if not state.todos:
-        return CompletionStatus.COMPLETE
+        return CompletionStatus.INCOMPLETE
 
     unfinished = get_unfinished_tasks(state)
 

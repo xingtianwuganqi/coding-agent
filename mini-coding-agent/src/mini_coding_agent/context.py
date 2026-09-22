@@ -10,7 +10,11 @@ SAFETY_MARGIN_TOKENS = 2000
 # 最大总结字符
 MAX_SUMMARY_CHARS = 3000
 
+# 保留完整的最近工具调用链，并在需要摘要时预留后续 turn 的空间。
+MIN_RETAINED_TURNS = 2
+COMPRESS_BATCH_TURNS = 3
 
+import math
 from .model_api import (
     call_model
 )
@@ -20,6 +24,8 @@ from .planing import (
     format_plan
 )
 
+from .agent_metrics import AgentMetrics
+from .agent_trace import AgentTrace
 import json
 
 def build_model_input(
@@ -160,6 +166,7 @@ def summarize_history(
         messages=[
             {"role": "user", "content": prompt},
         ],
+        thinking=False,
     )
 
     summary = (message.content or "").strip()
@@ -274,8 +281,11 @@ def compress_history(
     task: str,
     state: AgentState,
     history_turns: list[list],
+    metrics: AgentMetrics,
+    trace: AgentTrace
 ) -> None:
     """Compress old turns, allowing the latest whole turn to exceed the estimate."""
+    metrics.compression_checks += 1
     compression_pass = 0
     while True:
         compression_pass += 1
@@ -302,20 +312,26 @@ def compress_history(
         selected_turns = select_recent_turns(
             history_turns, recent_budget
         )
-        compress_count = len(history_turns) - len(selected_turns)
-        print(f"Selected turns: {len(selected_turns)}")
+        required_compress_count = len(history_turns) - len(selected_turns)
+        max_compress_count = max(
+            0,
+            len(history_turns) - min(MIN_RETAINED_TURNS, len(history_turns)),
+        )
+        compress_count = required_compress_count
+        if compress_count:
+            compress_count = min(
+                max_compress_count,
+                max(compress_count, COMPRESS_BATCH_TURNS),
+            )
+        retained_turns = history_turns[compress_count:]
+        print(f"Turns selected by budget: {len(selected_turns)}")
+        print(f"Turns retained after compression: {len(retained_turns)}")
         print(f"Selected turn tokens: {sum(turn_sizes[compress_count:])}")
         print(f"Turns to compress: {compress_count}")
-        if not selected_turns:
+        if required_compress_count:
             print(
-                f"Reason: newest turn ({turn_sizes[-1]}) exceeds recent budget "
-                f"({recent_budget}); selection stops at that turn, so all history is summarized."
-            )
-        elif compress_count:
-            print(
-                f"Selection stopped at stored turn {compress_count}: "
-                f"{sum(turn_sizes[compress_count:])} selected + "
-                f"{turn_sizes[compress_count - 1]} > {recent_budget}."
+                f"Budget requires compressing {required_compress_count} turn(s); "
+                f"compressing {compress_count} turn(s) to create a batch buffer."
             )
         if compress_count == 0:
             if fixed_tokens > input_budget:
@@ -329,8 +345,23 @@ def compress_history(
         history_text = history_to_text(history_turns[:compress_count])
         print(f"Summarizing {compress_count} oldest turns...", flush=True)
         new_summary = summarize_history(state.task_summary, history_text)
+
         if not new_summary.strip():
             raise ValueError("摘要为空，保留原历史")
+
+        # 记录一次压缩
+        metrics.context_compressions += 1
+
+        #记录
+        trace.record(
+            turn=metrics.model_turns,
+            event_type="compression",
+            name="compress_history",
+            detail=(
+                f"before_selected_turns = {selected_turns}, "
+                f"summarized_budget={estimate_tokens(new_summary)}"
+            ),
+        )
 
         # Delete only after summarization succeeds, then recheck the new budget.
         state.task_summary = new_summary
@@ -376,12 +407,27 @@ def truncate_tail(
     
 
 def estimate_tokens(text: str) -> int:
-    """
-    保守一点计算token
-    """
     if not text:
         return 0
-    return len(text)
+
+    cjk_chars = sum(
+        1
+        for char in text
+        if (
+            "\u3400" <= char <= "\u4dbf"
+            or "\u4e00" <= char <= "\u9fff"
+            or "\uf900" <= char <= "\ufaff"
+        )
+    )
+
+    non_cjk_chars = (
+        len(text) - cjk_chars
+    )
+
+    return (
+        cjk_chars
+        + math.ceil(non_cjk_chars / 3)
+    )
 
 
 def get_input_token_budget() -> int:
@@ -496,16 +542,22 @@ def select_recent_turns(
         used_tokens += turn_tokens
 
     selected_turns.reverse()
-    # 保留完整的最新一轮，避免拆散工具调用及结果；这是显式超预算兜底。
-    if not selected_turns and history_turns:
-        latest_tokens = estimate_turn_tokens(history_turns[-1])
+    minimum_turns = min(MIN_RETAINED_TURNS, len(history_turns))
+    # 保留完整的最近工具调用链，避免拆散 assistant tool_calls 与 tool 结果。
+    if len(selected_turns) < minimum_turns:
+        retained_turns = history_turns[-minimum_turns:]
+        retained_tokens = sum(
+            estimate_turn_tokens(turn)
+            for turn in retained_turns
+        )
         print(
-            f"WARNING: keeping only the latest turn ({latest_tokens} estimated tokens); "
-            f"recent budget is {token_budget}, overflow is {latest_tokens - token_budget}. "
+            f"WARNING: keeping the latest {minimum_turns} turn(s) "
+            f"({retained_tokens} estimated tokens); recent budget is {token_budget}, "
+            f"overflow is {retained_tokens - token_budget}. "
             "The API may reject this request.",
             flush=True,
         )
-        return history_turns[-min(2, len(history_turns)):]
+        return retained_turns
     return selected_turns
 
 def get_recent_context_budget(
