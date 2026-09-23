@@ -257,6 +257,73 @@ TOOLS = [
             ],
             "additionalProperties": False,
         },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_requirements",
+            "description": (
+                "Extract and lock the explicit task "
+                "requirements from the user's request."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "requirements": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                        "must_change",
+                                        "must_not_modify",
+                                        "must_verify",
+                                        "soft_constraint",
+                                    ],
+                                },
+                                "description": {
+                                    "type": "string",
+                                },
+                                "target": {
+                                    "type": [
+                                        "string",
+                                        "null",
+                                    ],
+                                },
+                                "verifier": {
+                                    "type": [
+                                        "string",
+                                        "null",
+                                    ],
+                                    "enum": [
+                                        "test",
+                                        "build",
+                                        "syntax",
+                                        "diff",
+                                        None,
+                                    ],
+                                },
+                                "command_contains": {
+                                    "type": [
+                                        "string",
+                                        "null",
+                                    ],
+                                },
+                            },
+                            "required": [
+                                "kind",
+                                "description",
+                            ],
+                        },
+                    },
+                },
+                "required": [
+                    "requirements"
+                ],
+            },
+        },
     }
 ]
 

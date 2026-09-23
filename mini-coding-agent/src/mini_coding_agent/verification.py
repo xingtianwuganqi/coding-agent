@@ -1,12 +1,16 @@
 '''验证'''
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
-from .planing import (
-    AgentState,
-)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .planing import AgentState
 from .tool_result import ToolResult
 from .agent_metrics import is_test_command
+from .evidence import CommandResult
 
 class VerificationKind(str, Enum):
     '''
@@ -33,6 +37,7 @@ class VerificationRecord:
     workspace_revision: int
     code_revision: int
     source: str
+    detail: str
 
 
 CODE_EXTENSIONS = {
@@ -79,6 +84,9 @@ def record_verification(
         source: str,
         detail: str = ""
 ) -> None:
+    '''
+    记录验证信息到AgentState
+    '''
     record = VerificationRecord(
         kind=kind,
         success=success,
@@ -96,7 +104,9 @@ def record_verification(
 def is_diff_command(
         command: str,
 ) -> bool:
-
+    '''
+    判断是否git diff命令
+    '''
     command = (
         command.strip().lower()
     )
@@ -107,6 +117,9 @@ def is_diff_command(
 def is_build_command(
         command: str,
 ) -> bool:
+    ''' 
+    判断是否build命令
+    '''
     command = command.lower()
 
     keywords = [
@@ -128,7 +141,9 @@ def is_build_command(
 def is_syntax_command(
     command: str,
 ) -> bool:
-
+    '''
+    判断是否syntax命令
+    '''
     command = command.lower()
 
     keywords = [
@@ -145,17 +160,18 @@ def is_syntax_command(
 def record_command_verification(
     state,
     command: str,
-    result: ToolResult,
+    result: CommandResult,
 ) -> None:
-
+    '''
+    记录命令验证结果
+    '''
     success = (
-        result.return_code == 0
+        result.returncode == 0
     )
 
     detail = (
-        result.content[-1000:]
-        if result.content
-        else result.error[-1000:]
+        result.stdout[-1000:]
+        or result.stderr[-1000:]
     )
 
     if is_test_command(command):
@@ -208,7 +224,9 @@ def record_command_verification(
 def has_successful_code_verification(
     state,
 ) -> bool:
-
+    '''
+    是否已经state.verification的records中是否有已经记录的state.code_revision
+    '''
     for record in reversed(
         state.verification.records
     ):
@@ -231,3 +249,34 @@ def has_successful_code_verification(
             return True
 
     return False
+
+
+def has_current_diff_verification(
+    state,
+) -> bool:
+    '''
+    判断是否完成了git diff
+    '''
+    for record in reversed(
+        state.verification.records
+    ):
+
+        if (
+            record.kind
+            != VerificationKind.DIFF
+        ):
+            continue
+
+        if (
+            not record.success
+        ):
+            continue
+
+        if (
+            record.workspace_revision
+            == state.workspace_revision
+        ):
+            return True
+
+    return False
+    

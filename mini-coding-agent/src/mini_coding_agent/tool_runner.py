@@ -49,6 +49,7 @@ from .verification import record_command_verification
 
 from .tool_result import ToolResult
 from .verification import is_code_file
+from .requirements import set_requirements
 
 WRITE_TOOLS = {
     "write_file",
@@ -60,6 +61,14 @@ def record_workspace_change(
         state: AgentState,
         path: str,
 ) -> None:
+    '''
+    记录workspace发生变化，如果是code_file,记录codex_revison 
+
+        
+    1.先记录，在write_file和replace_text下，先记录发生变化code_revision，
+    在run_command中执行完验证后，再记录当时的code_revision
+    2.在has
+    '''
     state.workspace_revision += 1
     state.changed_files.add(path)
 
@@ -131,7 +140,7 @@ def execute_tool(
                 return ToolResult(
                     success=True,
                     content=json.dumps(asdict(result)),
-                    error=result.message
+                    error=result.message,
                 )
             else:
                 return ToolResult(
@@ -165,7 +174,7 @@ def execute_tool(
                 return ToolResult(
                     success=True,
                     content=json.dumps(asdict(result)),
-                    error=result.message
+                    error=result.message,
                 )
             else:
                 return ToolResult(
@@ -189,16 +198,15 @@ def execute_tool(
                 **arguments
             )
 
-            record_command_verification(
-                state=state,
-                command=arguments["command"],
-                result=result
-            )
-
             if isinstance(
                 result,
                 CommandResult
             ):
+                record_command_verification(
+                    state=state,
+                    command=arguments["command"],
+                    result=result
+                )
                 # 先执行write_file或者replace_text,会更新workspace_revision += 1
                 # 命令执行完后，
                 # 将执行命令的结果记录下来
@@ -210,10 +218,11 @@ def execute_tool(
 
                 output = format_command_result(result=result)
                 if result.returncode == 0:
-                    return ToolResult.ok(
+                    tool_result = ToolResult.ok(
                         content=output,
                         return_code=result.returncode,
                     )
+                    return tool_result
                 return ToolResult.fail(
                     error=output,
                     return_code=result.returncode,
@@ -223,25 +232,26 @@ def execute_tool(
             return ToolResult(
                 success=False,
                 error=result,
-                return_code=result.returncode
             )
 
         if name == "set_plan":
 
-            if metrics.plan_created_turn is None:
-                metrics.plan_created_turn = (
-                    metrics.model_turns
-                )
-
-            record_progress(
-                state=state,
-                turn=metrics.model_turns
-            )
-
-            return set_plan(
+            result = set_plan(
                 state=state,
                 **arguments,
             )
+
+            if result.success:
+                record_progress(
+                    state=state,
+                    turn=metrics.model_turns
+                )
+                if metrics.plan_created_turn is None:
+                    metrics.plan_created_turn = (
+                        metrics.model_turns
+                    )
+
+            return result
 
         if name == "update_task":
             return update_task(
@@ -257,6 +267,26 @@ def execute_tool(
             return search_text(
                 **arguments
             )
+
+        if name == "set_requirements":
+            result = set_requirements(
+                state=state,
+                **arguments
+            )
+
+            if metrics.requirements_created_turn is None:
+                metrics.requirements_created_turn = metrics.model_turns
+                trace.record(
+                    turn=metrics.model_turns,
+                    event_type="requirements",
+                    name="set_requirements",
+                    detail=(
+                        f"count="
+                        f"{len(state.requirements.items)}"
+                    )
+                )
+
+            return result
 
         return ToolResult(
             success=False,

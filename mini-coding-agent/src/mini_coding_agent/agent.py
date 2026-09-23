@@ -20,10 +20,12 @@ from .planing import (
     is_stagnating,
     build_stagnation_feedback
 )
-from .task_complation import (
+from .task_completion import (
     CompletionStatus,
     get_completion_status,
     get_unfinished_tasks,
+    evaluate_completion,
+    build_completion_feedback
 )
 from .prompts import SYSTEM_PROMPT
 from .tools_schema import TOOLS
@@ -38,6 +40,8 @@ from .agent_metrics import (
 from .agent_trace import (
     AgentTrace
 )
+
+from .requirements import build_requirement_context
 
 from .guard import (
     RETRIEVAL_TOOLS,
@@ -143,7 +147,9 @@ def run_agent(task: str) -> str:
             history_turns=history_turns
         )
 
-        
+        requirements_context = build_requirement_context(
+            state=state
+        )
 
         # -------------------------
         # 1. 构建有限长度 Context
@@ -164,6 +170,8 @@ def run_agent(task: str) -> str:
             + "\n\n"
             + "CURRENT RUNTIME STATE:\n"
             + format_runtime_state(state)
+            + "\n\n"
+            + requirements_context
         )
 
         print_state_debug(state)
@@ -181,61 +189,49 @@ def run_agent(task: str) -> str:
         tool_calls = message.tool_calls or []
 
         if not tool_calls:
-            completion_status = get_completion_status(
-                state
+            # Completion Protocol
+            report = evaluate_completion(state=state)
+            metrics.completion_checks += 1
+            missing_names = [
+                item.name
+                for item in report.missing
+            ]
+            trace.record(
+                turn=metrics.model_turns,
+                event_type="completion_check",
+                name="completion_protocol",
+                detail=(
+                    f"completion={report.complete}"
+                    f"missing={missing_names}"
+                )
             )
 
-            if completion_status == CompletionStatus.COMPLETE:
+            # 真正完成
+            if report.complete == CompletionStatus.COMPLETE:
                 metrics.end_runing()
                 trace.print_trace()
                 return message.content or ""
 
-            if (
-                completion_status == CompletionStatus.BLOCKED
-                and allow_blocked_final == True
-            ):
+            if  report.complete == CompletionStatus.BLOCKED and allow_blocked_final:
                 metrics.end_runing()
                 trace.print_trace()
                 return message.content or ""
 
 
-            if completion_status == CompletionStatus.INCOMPLETE:
-                # unfinished = get_unfinished_tasks(state)
+            if report.complete == CompletionStatus.INCOMPLETE:
 
-                # unfinished_text = "\n".join(
-                #     f"- {todo.id}. {todo.content}"
-                #     for todo in unfinished
-                # )
+                metrics.completion_rejections += 1
 
-                runtime_feedback = {
-                    "role": "user",
-                    "content": (
-                        "RUNTIME GUARD: no plan exists yet. "
-                        "Create a concise todo plan with set_plan before finishing."
-                    ),
-                }
-
-                turn_items.append(runtime_feedback)
-                history_turns.append(
-                    turn_items
+                feed_back = build_completion_feedback(
+                    report=report,
+                    state=state
                 )
 
-                continue
-
-            if completion_status == CompletionStatus.BLOCKED:
-                allow_blocked_final = True
-                runtime_feedback = {
-                    "role": "user",
-                    "content": (
-                        "Some tasks are blocked.\n\n"
-                        f"{format_plan(state)}\n\n"
-                        "Provide a final answer "
-                        "explaining completed work "
-                        "and blocked tasks."
-                    ),
-                }
                 turn_items.append(
-                    runtime_feedback
+                    {
+                        'role': 'user',
+                        'content': feed_back
+                    }
                 )
 
                 history_turns.append(
@@ -243,6 +239,89 @@ def run_agent(task: str) -> str:
                 )
 
                 continue
+
+            if report.complete == CompletionStatus.BLOCKED:
+                allow_blocked_final = True
+                feed_back = build_completion_feedback(
+                    report=report,
+                    state=state
+                )
+                
+                turn_items.append(
+                    {
+                        'role': 'user',
+                        'content': feed_back
+                    }
+                )
+
+                history_turns.append(
+                    turn_items
+                )
+
+                continue
+
+            # completion_status = get_completion_status(
+            #     state
+            # )
+
+            # if completion_status == CompletionStatus.COMPLETE:
+            #     metrics.end_runing()
+            #     trace.print_trace()
+            #     return message.content or ""
+
+            # if (
+            #     completion_status == CompletionStatus.BLOCKED
+            #     and allow_blocked_final == True
+            # ):
+            #     metrics.end_runing()
+            #     trace.print_trace()
+            #     return message.content or ""
+
+
+            # if completion_status == CompletionStatus.INCOMPLETE:
+            #     # unfinished = get_unfinished_tasks(state)
+
+            #     # unfinished_text = "\n".join(
+            #     #     f"- {todo.id}. {todo.content}"
+            #     #     for todo in unfinished
+            #     # )
+
+            #     runtime_feedback = {
+            #         "role": "user",
+            #         "content": (
+            #             "RUNTIME GUARD: no plan exists yet. "
+            #             "Create a concise todo plan with set_plan before finishing."
+            #         ),
+            #     }
+
+            #     turn_items.append(runtime_feedback)
+            #     history_turns.append(
+            #         turn_items
+            #     )
+
+            #     continue
+
+            # if completion_status == CompletionStatus.BLOCKED:
+            #     allow_blocked_final = True
+            #     runtime_feedback = {
+            #         "role": "user",
+            #         "content": (
+            #             "Some tasks are blocked.\n\n"
+            #             f"{format_plan(state)}\n\n"
+            #             "Provide a final answer "
+            #             "explaining completed work "
+            #             "and blocked tasks."
+            #         ),
+            #     }
+            #     turn_items.append(
+            #         runtime_feedback
+            #     )
+
+            #     history_turns.append(
+            #         turn_items
+            #     )
+
+            #     continue
 
         # -------------------------
         # 5. 执行 Tool Calls
@@ -269,7 +348,9 @@ def run_agent(task: str) -> str:
                 guard_error = guard_tool_call(
                     name=name,
                     arguments=arguments,
-                    state=state
+                    state=state,
+                    metrics=metrics,
+                    trace=trace
                 )
             
                 if guard_error:
@@ -354,5 +435,5 @@ def run_agent(task: str) -> str:
         history_turns.append(
             turn_items
         )
-        if NEED_SLEEP:
-            time.sleep(20)
+        # if NEED_SLEEP:
+        #     time.sleep(30)

@@ -3,6 +3,11 @@ from .planing import (
     AgentState
 )
 
+from .agent_metrics import AgentMetrics
+from .agent_trace import AgentTrace
+
+from .requirements import guard_requirement_constraints
+
 MAX_PRE_PLAN_INSPECTIONS = 4
 MAX_CONSECUTIVE_RETRIEVALS = 3
 
@@ -22,12 +27,53 @@ ACTION_TOOLS = {
 def guard_tool_call(
         name: str,
         arguments: dict,
-        state: AgentState
+        state: AgentState,
+        metrics: AgentMetrics,
+        trace: AgentTrace
 ) -> str | None:
     '''
     工具调用守卫
     '''
+
+    if name == "set_requirements" and state.requirements.locked:
+        return (
+            "RUNTIME GUARD: task requirements are already locked. "
+            "Do not call set_requirements again; continue the current plan."
+        )
+
+    if not state.requirements.locked:
+        if name == "set_requirements":
+            return None
+        return (
+            "RUNTIME GUARD: task requirements "
+            "have not been extracted yet. "
+            "Call set_requirements first and "
+            "record the explicit requirements "
+            "from the user's request."
+        )
+
+    requirement_error = guard_requirement_constraints(
+        name=name,
+        arguments=arguments,
+        state=state
+    )
+
+    if requirement_error:
+        metrics.requirement_violations += 1
+        trace.record(
+            turn=metrics.model_turns,
+            event_type="requirement_violation",
+            name=name,
+            detail=requirement_error
+        )
+        return requirement_error
+
     if name == "set_plan":
+        if state.todos:
+            return (
+                "RUNTIME GUARD: a todo plan already exists. "
+                "Do not call set_plan again; use update_task to continue it."
+            )
         state.consecutive_retrieval_count = 0
         return None
 

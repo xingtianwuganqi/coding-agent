@@ -48,6 +48,16 @@ class AgentMetrics:
 
     repeated_failures: int = 0
 
+    # verification版本中新增
+    # 
+    completion_checks: int = 0
+    completion_rejections: int = 0
+
+    # requirement
+    requirements_created_turn: int | None = None
+    # guard_requirement中记录守护了几次
+    requirement_violations: int = 0
+
     # 给Metrics增加记录工具的方法
     def record_tool_call(
             self,

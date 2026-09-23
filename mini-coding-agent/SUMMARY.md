@@ -488,7 +488,7 @@ Todo 被标记 blocked，并给出原因
 
 ## 17. Verification / Task Completion Protocol 验证/任务完成协议
 
-## 17.1 任务完成不在只靠状态变成COMPLETION，而是看是否测试完成，要有证据证明完成了
+### 17.1 任务完成不在只靠状态变成COMPLETION，而是看是否测试完成，要有证据证明完成了
 ```
           Task Completion
                  │
@@ -496,4 +496,184 @@ Todo 被标记 blocked，并给出原因
        ▼         ▼         ▼
     Plan       Work     Verification
    Complete    Done        Passed
+```
+
+### 17.2 版本号与验证记录
+```
+- AgentState 新增两个版本号：
+  - workspace_revision：任何文件修改都 +1（tool_runner 中记录）
+  - code_revision：只有修改“代码文件”才 +1
+    （write_file / replace_text 时用 is_code_file 判断后缀，
+     命中 CODE_EXTENSIONS 才增加）
+- AgentState 新增 verification（VerificationState），内部维护
+  records: list[VerificationRecord]
+- VerificationRecord 字段：
+  kind / success / workspace_revision / code_revision / source / detail
+  - kind 取值（VerificationKind）：
+    diff / test / build / syntax / readback
+  - 记录时会同时快照当时的 workspace_revision 与 code_revision，
+    即“这次验证针对的是哪一个修订版本”
+```
+
+### 17.3 命令如何被记录为验证
+```
+- run_command 执行后调用 record_command_verification(state, command, result)
+- success 由 result.return_code == 0 判定
+- 按命令文本分类（命中即记录并返回，按此顺序）：
+  1. is_test_command   → TEST
+  2. is_diff_command   → DIFF   （命令以 "git diff" 开头）
+  3. is_build_command  → BUILD  （go build / npm run build / cargo build 等）
+  4. is_syntax_command → SYNTAX （py_compile / compileall）
+  5. 都不命中则不记录
+```
+
+### 17.4 完成判定 evaluate_completion
+```
+依次检查以下 requirements，全部满足才算 complete：
+1. plan_exists      ：state.todos 非空
+2. todos_completed  ：所有 todo 都是 COMPLETED
+3. no_blocked_tasks ：不存在 BLOCKED 的 todo
+4. diff_verified    ：仅当 state.changed_files 非空时检查
+                      has_current_diff_verification(state)
+                      即存在成功的 DIFF 记录且其
+                      workspace_revision == 当前 workspace_revision
+5. code_verified    ：仅当 state.code_revision > 0 时检查
+                      has_successful_code_verification(state)
+                      即存在 kind ∈ {TEST, BUILD, SYNTAX}、success 为真、
+                      且 code_revision == 当前 code_revision 的记录
+
+注：DIFF 记录只用于 diff_verified，不能当作代码验证；
+    代码验证必须是 TEST/BUILD/SYNTAX 且成功。
+    只要 code_revision 前进（又改了代码），旧的成功验证即失效，
+    必须重新跑测试/构建/语法检查。
+未满足时通过 build_completion_feedback 生成
+"RUNTIME COMPLETION GUARD: ..." 文本反馈给模型。
+```
+
+## 18 Task Requirement Extraction 任务需求提取
+
+```
+实现文件：src/mini_coding_agent/requirements.py
+
+目的：把用户请求里“明确的要求”抽取成结构化需求，
+      记录到 AgentState.requirements 并锁定，
+      供上下文提示 / 运行时守卫 / 完成判定使用。
+```
+
+### 18.1 需求类型 RequirementKind
+```
+- must_change      ：用户明确要求某个文件/模块必须被修改
+                     （target 可为 None，表示“必须发生文件修改”即可）
+- must_not_modify  ：用户明确禁止修改某个文件/目录（必须有 target 路径）
+- must_verify      ：用户明确要求某个验证
+- soft_constraint  ：runtime 暂时无法机械证明的需求（始终视为满足）
+
+结构：
+- TaskRequirement：id / kind / description / target /
+                   verifier / command_contains
+- RequirementState：items: list[TaskRequirement] + locked: bool
+- RequirementCheck：requirement_id / satisfied / reason
+```
+
+### 18.2 提取与锁定 set_requirements
+```
+set_requirements(state, requirements) -> ToolResult
+- 若 state.requirements.locked 为真：直接失败
+  （"Requirements are already locked and cannot be replaced."，
+   需求不可替换、不可再次调用）
+- 逐个解析 requirements（list[dict]）：
+  1. kind 必须能转成 RequirementKind，否则失败
+     "Invalid requirement kind: ..."
+  2. description 不能为空，否则失败
+     "Requirement description cannot be empty"
+  3. must_not_modify 必须带 target，否则失败
+     "must_not_modify requires a target path."
+     （must_change 的 target 可为空，表示“必须发生文件修改”即可）
+  4. must_verify 的 verifier 必须在
+     {test, build, syntax, diff} 内，否则失败
+     "must_verifier requires verifier to be one of: ..."
+  5. id 按列表顺序从 1 开始编号（index + 1）
+- 全部合法后：写入 state.requirements.items 并置 locked = True
+- 返回 ToolResult.ok("Recorded N requirements.")
+注：解析在内存的 parsed 列表中完成，只要有一条非法就立即
+    返回失败，state.requirements.items 不会被写入、locked 也不会
+    被置为 True（即“整体失败、不落库、不锁定”）。
+```
+
+### 18.3 需求上下文 build_requirement_context
+```
+- 未锁定（locked 为 False）时返回
+  "Task requirements have not been extracted yet"
+- 已锁定则逐条输出：
+  "TASK REQUIREMENTS:" 开头，之后每行
+  "{id}. [{kind}] {description} | target=... | verifier=... | command_contains=..."
+  （target / verifier / command_contains 有值时才拼接对应片段）
+```
+
+### 18.4 路径匹配 path_matches_target
+```
+- normalize_path：
+  str(PurePosixPath(path)) 归一化（如合并多余分隔符、
+  去掉结尾 "/"、把 "." 解析掉），再把反斜杠替换为正斜杠，
+  最后 lstrip("./")（去掉开头连续的 '.' 与 '/' 字符）
+- path_matches_target(path, target)：
+  1. 归一化后两者完全相等 → True
+  2. 否则 target 是 path 的祖先目录（target in path.parents）→ True
+  （即命中目标路径本身或其子路径）
+```
+
+### 18.5 运行时守卫 guard_requirement_constraints
+```
+guard_requirement_constraints(name, arguments, state) -> str | None
+- 仅对修改类工具生效（MUTATION_TOOLS）：
+  write_file / replace_text / delete_file / rename_file
+  （其中 delete_file / rename_file 目前仅在集合中预留，
+   实际工具列表如 list_files/read_file/write_file/replace_text/run_command）
+- 非修改类工具：直接放行（返回 None）
+- 从 arguments 取 "path"；若无 path 参数：直接放行（返回 None）
+  （因此 rename_file 的 source 之类参数不会被检查）
+- 遍历 must_not_modify 需求（跳过无 target 的），
+  若 path_matches_target(path, target) 命中，则返回
+  "RUNTIME REQUIREMENT GUARD: modifying '<path>' would violate
+   requirement <id>: <description>"
+- 命中首个违规即返回该字符串；无命中返回 None
+- 用于在模型动手改被禁路径前拦截（只查 must_not_modify）。
+```
+
+### 18.6 验证类需求判定 has_required_verification
+```
+- expected_kind = requirement.verifier
+- 倒序扫描 state.verification.records，逐条过滤：
+  1. success 为真
+  2. record.kind.value == expected_kind
+  3. 版本匹配：
+     - verifier == "diff"：record.workspace_revision 必须
+       == 当前 state.workspace_revision
+     - 其它（test/build/syntax）：record.code_revision 必须
+       == 当前 state.code_revision
+  4. 若需求带 command_contains：将其小写后必须出现在
+     record.source（小写）中
+- 命中即返回 True，否则 False
+（与 §17 的版本失效机制一致：代码又改了，旧验证即失效）
+```
+
+### 18.7 单项需求评估 evaluate_requirement
+```
+evaluate_requirement(state, requirement) -> RequirementCheck
+- must_change：
+  - target 为空：satisfied = bool(state.changed_files)（发生过任意改动）
+    reason = "Workspace change required."
+  - 有 target  ：satisfied = 任一 changed_files 命中 path_matches_target
+    reason = "Required target '<target>' must be changed"
+- must_not_modify：
+  satisfied = not 任一 changed_files 命中 path_matches_target(target)
+  （即被禁路径没被动过）
+  reason = "Forbidden target '<target>' must remain unchanged"
+- must_verify：
+  satisfied = has_required_verification(...)
+  reason 固定为“当前版本还没有通过的验证”一类的提示
+  （"Required verification has not passed for the current revision."，
+   注意该 reason 无论 satisfied 真假都会带上）
+- soft_constraint：
+  始终 satisfied = True，仅保留在上下文中提示、不做机械证明
 ```

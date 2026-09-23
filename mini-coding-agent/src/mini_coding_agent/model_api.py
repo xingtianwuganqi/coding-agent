@@ -24,7 +24,7 @@ def _load_local_env() -> None:
 _load_local_env()
 
 # Change only this value, then restart the agent.
-PROVIDER = "bai"
+PROVIDER = "deepseek"
 
 PROVIDERS = {
     "zhipu": {

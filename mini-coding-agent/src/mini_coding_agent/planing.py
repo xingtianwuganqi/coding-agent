@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import TYPE_CHECKING
 from .evidence import (
     EvidenceType
 )
@@ -12,18 +15,27 @@ from .agent_metrics import(
 )
 
 from .tool_result import ToolResult
-from .verification import VerificationRecord
+from .requirements import RequirementState
+
+if TYPE_CHECKING:
+    from .verification import VerificationRecord
 
 # 最大停滞转数
 MAX_STAGNANT_TURNS = 5
 
 @dataclass
 class FailureState:
+    '''
+    故障状态
+    '''
     last_signature: str | None = None
     consecutive_count: int = 0
 
 @dataclass
 class VerificationState:
+    '''
+    验证状态
+    '''
     records: list[VerificationRecord] = field(
         default_factory=list
     )
@@ -85,6 +97,10 @@ class AgentState:
         default_factory=VerificationState
     )
 
+    requirements: RequirementState = field(
+        default_factory=RequirementState
+    )
+
 
 def format_plan(state: AgentState) -> str:
     if not state.todos:
@@ -129,6 +145,21 @@ def set_plan(
     """
     设置计划
     """
+    old_plan = [
+        {
+            "content": todo.content,
+            "required_evidence": (
+                todo.required_evidence.value
+                if todo.required_evidence
+                else "none"
+            )
+        }
+        for todo in state.todos
+    ]
+    if old_plan == items:
+        return ToolResult.fail(
+            error="Plan is unchanged",
+        )
     todos = []
     for index, item in enumerate(
         items,
@@ -165,7 +196,7 @@ def set_plan(
     state.todos = todos
     return ToolResult(
         success=True,
-        content=format_plan(state)
+        content=format_plan(state),
     )
 
 def update_task(
@@ -190,6 +221,14 @@ def update_task(
         if todo.id != task_id:
             continue
 
+        # 如果状态相同，不用改
+        if todo.status == new_status:
+            return ToolResult.fail(
+                error=(
+                    f"Task {task_id} is already "
+                    f"{new_status.value}"
+                ),
+            )
         # 如果当前状态完成了，
         # 如果这个 Todo 有证据要求：required = todo.required_evidence
         # 但runtime中没有记录required not in state.evidence
@@ -229,7 +268,7 @@ def update_task(
 
         return ToolResult(
             success=True,
-            content=result
+            content=result,
         )
 
     return ToolResult(
