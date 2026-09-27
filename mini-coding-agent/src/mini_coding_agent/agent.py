@@ -13,12 +13,14 @@ from .context import (
 )
 from .planing import (
     AgentState,
+    create_agent_state,
     format_plan,
     print_state_debug,
     record_progress,
     tool_caused_progress,
     is_stagnating,
-    build_stagnation_feedback
+    build_stagnation_feedback,
+    build_runtime_instructions
 )
 from .task_completion import (
     CompletionStatus,
@@ -41,19 +43,21 @@ from .agent_trace import (
     AgentTrace
 )
 
-from .requirements import build_requirement_context
 
 from .guard import (
     RETRIEVAL_TOOLS,
     guard_tool_call,
     guard_recent_tool_call,
 )
+from .replanning import build_replan_feedback
 
 NEED_SLEEP: bool = True
 
 def run_agent(task: str) -> str:
 
-    state = AgentState()
+    state = create_agent_state(
+        user_prompt=task
+    )
 
     # 指标对象
     metrics = AgentMetrics()
@@ -109,6 +113,7 @@ def run_agent(task: str) -> str:
                 ),
             )
             metrics.stagnation_warnings += 1
+            state.stagnation_warnings += 1
             stagnation_feedback = build_stagnation_feedback(
                 state=state
             )
@@ -147,9 +152,13 @@ def run_agent(task: str) -> str:
             history_turns=history_turns
         )
 
-        requirements_context = build_requirement_context(
+        runtime_instructions = build_runtime_instructions(
             state=state
         )
+
+        replan_context = build_replan_feedback(
+            state=state
+        ) or ""
 
         # -------------------------
         # 1. 构建有限长度 Context
@@ -170,8 +179,9 @@ def run_agent(task: str) -> str:
             + "\n\n"
             + "CURRENT RUNTIME STATE:\n"
             + format_runtime_state(state)
+            + runtime_instructions
+            + replan_context
             + "\n\n"
-            + requirements_context
         )
 
         print_state_debug(state)

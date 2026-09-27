@@ -677,3 +677,414 @@ evaluate_requirement(state, requirement) -> RequirementCheck
 - soft_constraint：
   始终 satisfied = True，仅保留在上下文中提示、不做机械证明
 ```
+
+
+## 19 Goal/Plan/Requirement Separation + Replaning
+
+把一次任务的“三件事”拆成彼此独立、职责清晰的状态，避免模型在执行途中
+偷换目标或改写约束：
+```
+- Goal        : 这次到底要达成什么           （最上层的目标，锁一次）
+- Plan        : 打算分几步做                  （可执行、可调整的执行策略）
+- Requirements: 过程中必须一直满足的约束       （锁定后不可放松）
+```
+三者的生命周期不同：
+- Goal【锁定后不可变】：锁定之后就是整个任务的锚点，不允许被覆盖或弱化。
+- Requirements【锁定后不可变】：是“必须保持成立”的约束，replan 也不能删改。
+- Plan【允许按规则替换】：只是当前执行策略，当证据表明原策略不再有效时
+  可以通过 replan 整体替换。
+
+这样做的好处：模型可以修正“怎么做”（Plan），但改不了“做什么”（Goal）
+和“必须守住什么”（Requirements），从而在长任务里保持方向不跑偏。
+
+### 19.1 目标锁定 set_goal
+```
+set_goal(state, objective) -> ToolResult
+1. objective = objective.strip()
+2. 若 state.goal.locked 已为 True：
+   返回失败 "Goal is already locked and cannot be replaced."
+   （Goal 只能设置一次，之后无法覆盖）
+3. 若 strip 后 objective 为空：
+   返回失败 "Goal cannot be empty."
+4. 否则写入 state.goal.objective = objective
+   并置 state.goal.locked = True
+5. 返回成功 content = "Goal locked: {objective}"
+```
+要点：Goal 属于“一次性锁定”的字段，set_goal 成功即不可回退，
+后续 replan 必须在 goal 已锁定的前提下才被允许。
+
+### 19.2 GoalState / RequirementState 状态
+```
+@dataclass GoalState:
+  original_request: str   # 初始用户请求原文
+  objective: str = ""     # 抽取出的目标
+  locked: bool = False    # 是否已锁定
+
+RequirementState（见 §18）:
+  requirements: list[Requirement]
+  locked: bool            # 需求抽取完成后锁定
+```
+AgentState 同时持有 plan、goal、requirements（requirements 默认
+RequirementState()），三者分离存放，互不覆盖。
+
+### 19.3 replan 前置校验
+```
+replan(state, items, reason, explanation, current_turn) -> ToolResult
+按顺序校验，任一条失败即返回，且不改动当前计划：
+1. state.plan.replan_count >= MAX_REPLANS：
+   失败 “Maximum replanning limit has been reached.
+         Do not keep replacing the plan.
+         Resolve the current blocker or mark the task blocked.”
+   （防止无限重规划，逼模型去解决阻塞或直接标记 blocked）
+2. state.plan.revision == 0：尚没有计划
+   失败 "No existing plan. Use set_plan first."
+3. not state.goal.locked：
+   失败 "Cannot replan without a locked goal."
+   （Goal 必须已锁定；这也是“Goal 在 replan 中不可变”的体现）
+4. not state.requirements.locked：
+   失败 "Cannot replan without locked requirements."
+   （Requirements 必须已锁定，replan 不得绕过约束）
+5. explanation = explanation.strip() 后为空：
+   失败 "Replanning requires an explanation."
+   （必须说明为什么旧计划不再适用）
+```
+reason 取 ReplanReason 枚举，如
+assumption_invalid / blocked_task / repeated_failure /
+stagnation / requirement_conflict 等，用于区分“为什么要重规划”。
+
+### 19.4 replan 新计划校验与替换
+```
+6. items 为空：失败 "Replacement plan cannot be empty."
+7. 逐条把 items 规范化为 TodoItem（先校验，后写入）：
+   - 必须是 dict 且 item["content"] 是字符串，
+     否则失败 "Plan item must have text content."
+   - content = item["content"].strip()，为空则
+     失败 "Plan item content cannot be empty."
+   - required_evidence 缺省为 "none"；
+     非 "none" 时用 EvidenceType(evidence_value) 转换，
+     非法值失败 "Invalid evidence type: {evidence_value}"
+   - 生成 TodoItem(id=index, content=content,
+                   required_evidence=required_evidence)
+8. 与当前计划逐条比较 content 列表：
+   若与旧计划完全相同，失败
+   "Replacement plan is identical to the current plan."
+   （不允许“换汤不换药”的空 replan）
+9. 全部通过后才真正落地：
+   写入新的 todos，递增 replan_count，返回新计划（format_plan）
+```
+关键设计：**先校验、后变更**。所有失败分支都在修改 state 之前返回，
+因此一次失败的 replan 不会破坏当前正在执行的计划。
+
+### 19.5 分离带来的约束保证
+```
+- Goal 在 replan 中不变：replan 只替换 plan.items，
+  永不触碰 state.goal（且要求 goal 已 locked）。
+- Requirements 在 replan 中不变：replan 只读 state.requirements.locked，
+  不修改任何 requirement；replan 通过 reason=requirement_conflict
+  表达“旧计划会违反需求”，而不是去改需求本身。
+- Plan 可换但有边界：次数上限（MAX_REPLANS）、非空、内容需变化、
+  必须给出解释，避免无意义抖动。
+```
+```text
+模型可以修改“怎么做”（Plan），
+但不可以修改“做什么”（Goal）与“必须守住什么”（Requirements）。
+```
+
+## 20 v1 Plan Quality / Plan Validation 计划质量和计划验证
+
+计划的“质量”和“合法性”不是靠模型自觉，而是被代码在
+set_plan / replan 的入口处强制校验。planing.py 中为此定义了一组
+专门的数据结构与常量。
+
+### 20.1 计划相关的数据结构
+```
+常量（planing.py 顶部）：
+- MIN_PLAN_ITEMS = 2    计划不能太碎（至少 2 项）
+- MAX_PLAN_ITEMS = 7    计划不能太臃肿（最多 7 项）
+
+PlanStatus(str, Enum)：
+  ACTIVE = "ACTIVE" | SUPERSEDED = "superseded" | COMPLETED = "completed"
+
+PlanSnapshot（一份历史计划的快照）：
+  revision / items / status / reason / created_turn
+  superseded_turn: int | None = None
+
+PlanState（当前计划状态）：
+  revision: int = 0                 计划版本号，0 表示“还没有计划”
+  items: list[TodoItem]             当前计划
+  history: list[PlanSnapshot]       历史计划快照
+  replan_count: int = 0             已重规划次数
+
+TodoItem：
+  id / content / status(TaskStatus) / note
+  required_evidence: EvidenceType | None = None
+
+TaskStatus(Enum)：
+  PENDING="pending" | IN_PROGRESS="in_progress"
+  COMPLETED="completed" | BLOCKED="blocked"
+```
+
+### 20.2 校验结果的两级结构
+```
+PlanValidationIssue：
+  code: str        问题的机器可读代码
+  message: str     问题的人类可读描述
+  （一个 issue 对应一个具体问题）
+
+PlanValidationResult：
+  valid: bool                      整体是否通过
+  issues: list[PlanValidationIssue] 所有问题
+  （把校验做成“收集问题”的风格：
+    不因为第一个错误就中断，
+    而是把所有问题一次性返回给模型，
+    便于模型一轮内把计划改到位）
+```
+
+### 20.3 进入校验的前置条件
+```
+set_plan 在真正校验 items 之前，先检查三个前置条件：
+1. state.goal.locked 为真，否则失败
+   "Goal must be locked before creating a plan"
+2. state.requirements.locked 为真，否则失败
+   "Requirements must be locked before creating a plan"
+3. state.plan.revision == 0，否则失败
+   "An active plan already exists. Use replan instead of set_plan."
+   （已有计划就只能 replan，不能用 set_plan 覆盖）
+
+即：先有锁定的 Goal 和 Requirements，才有资格谈“计划质量”。
+```
+
+### 20.4 计划条目的规范化与校验
+```
+先把 items 里的假值过滤掉：clean_items = [item for item in items if item]
+若为空 → 失败 "Plan cannot be empty."
+
+再逐条规范化为 TodoItem（index 从 1 开始）：
+- 条目必须是 dict，且 item["content"] 是字符串，
+  否则失败 "Plan item must have text content."
+- content = item["content"].strip()，为空则失败
+  "Plan item content cannot be empty."
+- required_evidence 缺省为 "none"；
+  非 "none" 时用 EvidenceType(evidence_value) 转换，
+  非法值失败 "Invalid evidence type: {evidence_value}"
+- 生成 TodoItem(id=index, content=content,
+                required_evidence=required_evidence)
+
+校验通过后才写入 state.plan.items / revision，
+即“先校验、后落地”，失败的计划不会污染当前状态。
+```
+
+### 20.5 required_evidence：把“质量”落到证据上
+```
+TodoItem.required_evidence 的类型是 EvidenceType（见 evidence.py），
+缺省为 None 表示“不强制证据”。
+
+format_plan 输出时，只有 required_evidence 非 None 才追加
+  " [requires: {required_evidence.value}]"
+
+对应 AgentState 上的证据记账：
+- evidence: dict[EvidenceType, int]      各类型证据的计数
+- workspace_revision: int                任何文件修改都会增加
+- code_revision: int                     只有代码文件修改才增加
+
+因此“计划质量”在运行时的含义是：
+被标记 [requires: ...] 的条目，必须有对应的、且版本不陈旧的
+证据才算真正完成（由 has_valid_evidence 判定）。
+计划阶段就把 evidence 要求写死，避免完成后才补证。
+```
+
+### 20.6 计划质量的三个维度
+```
+1. 形状（Shape）
+   - 非空（Plan cannot be empty.）
+   - 条目数量落在 MIN_PLAN_ITEMS=2 与 MAX_PLAN_ITEMS=7 之间
+     （既不过碎，也不过臃肿）
+   - 每条是带非空文本的 dict
+2. 可验证性（Verifiability）
+   - 条目可声明 required_evidence（none / tests_passed /
+     diff_inspected 等），把“怎么算完成”写进计划本身
+   - 证据与 workspace_revision / code_revision 绑定，
+     代码一变，旧证据即失效
+3. 一致性（Consistency）
+   - 计划必须建立在已锁定的 Goal 与 Requirements 之上
+   - 已经存在计划时只能用 replan，且 replan 还要求
+     “替换计划不能与旧计划完全相同”
+     （Replacement plan is identical to the current plan.）
+     防止换汤不换药的抖动
+```
+
+### 20.7 关键设计取舍
+```
+- 校验前置（fail fast）：Goal/Requirements 未锁定、已有计划、
+  空计划都在解析条目之前就返回失败。
+- 收集式校验：PlanValidationResult 携带 issues 列表，
+  把多个问题一次性反馈，减少无效往返。
+- 计划状态可追溯：PlanState.revision + history(PlanSnapshot)
+  + replan_count 让每次计划变更都有版本、有原因(reason)、
+  有起止 turn，便于排查“计划为什么变了”。
+- 质量靠约束不靠自觉：条目数上下界、证据要求、非重复计划，
+  全部由代码强制，而不是提示词里的一句“请写好计划”。
+```
+```text
+计划质量 = 形状规范（2~7 条、非空、带文本）
+         + 可验证（required_evidence + 版本化证据）
+         + 一致（Goal/Requirements 锁定、replan 有边界）
+```
+
+### turn 58步完成
+
+```
+在 planing.py 增加 PlanValidationIssue / PlanValidationResult / validate_plan()。
+实现 2~7 个 Todo、完全重复 Todo、MUST_VERIFY(test/diff) Coverage 三类检查。
+在 set_plan() 提交 state.plan 之前调用 validate_plan()。
+在 replan() 保存旧 Plan 和替换新 Plan 之前调用同一个 validate_plan()。
+```
+
+## 20 v2 Plan Validation V2 (Plan 是否真正覆盖了Requirements)
+
+v1 的 validate_plan 只检查计划的“形状”（非空、2~7 条、非重复）。
+v2 把校验推进了一层：计划不仅要形状规范，还必须**真正把锁定的
+Requirements 映射到具体的 Plan 条目上**。为此 TodoItem 增加了两
+个字段，validate_plan 也拆成“形状检查 + 四个 Requirements 相关检查”。
+
+### 20v2.1 TodoItem 的 V2 扩展
+```
+TodoItem 新增（planing.py，标注 “# plan validation v2”）：
+- requirement_ids: list[int] = []     该条目覆盖了哪些 Requirement.id
+- kind: TodoKind                      该条目的类型
+
+TodoKind(str, Enum)：
+  ANALYSIS = "analysis"
+  IMPLEMENTATION = "implementation"
+  VERIFICATION = "verification"
+```
+
+### 20v2.2 V2 校验的结构
+```
+validate_plan(state, todos) 返回 PlanValidationResult，按顺序收集：
+1. 形状检查（沿用 v1）：
+   - len(todos) < MIN_PLAN_ITEMS → plan_too_short
+   - len(todos) > MAX_PLAN_ITEMS → plan_too_long
+   - 重复条目（normalize_plan_content 去空格/小写后比较）
+     → duplicate_plan_item
+2. validate_plan_verification  → 验证证据覆盖
+3. validate_requirement_references → Requirement 引用合法性
+4. validate_requirement_mapping    → Requirement.kind 与 TodoKind 对应
+5. validate_requirement_coverage   → MUST_CHANGE/MUST_VERIFY 是否被覆盖
+
+仍然是“收集式校验”：把四个子函数拿到的 issues 全部汇总，
+valid = not issues 才会通过。
+```
+
+### 20v2.3 Requirement 引用合法性（validate_requirement_references）
+```
+合法 id 集合 = {requirement.id for requirement in state.requirements.items}
+
+遍历每个 todo.requirement_ids，若引用了集合外（不存在）的 id：
+  → issue code="unknown_requirement"
+     "Todo {todo.id} references unknown requirement {requirement_id}."
+即 Todo 不能凭空引用一个不存在的需求。
+```
+
+### 20v2.4 Requirement.kind 与 TodoKind 的对应（validate_requirement_mapping）
+```
+对每个 todo 的每个 requirement_id，查出对应 Requirement，
+再按 kind 强制一一对应：
+- MUST_CHANGE 必须由 IMPLEMENTATION todo 覆盖，
+  否则 → requirement_kind_mismatch
+  "Requirement {id} is must_change and must be covered by an
+   implementation todo."
+- MUST_VERIFY 必须由 VERIFICATION todo 覆盖，
+  否则 → requirement_kind_mismatch
+  "Requirement {id} is must_verify and must be covered by a
+   verification todo."
+- MUST_NOT_MODIFY 是运行时约束（Runtime Guard），
+  不应被分配到任何 todo，否则 → constraint_requirement_reference
+  "Requirement {id} is a runtime constraint and should not be
+   assigned to a todo item."
+
+即 kind 语义：
+  MUST_CHANGE      -> IMPLEMENTATION
+  MUST_VERIFY      -> VERIFICATION
+  MUST_NOT_MODIFY  -> Runtime Guard（不允许挂到 todo）
+  SOFT_CONSTRAINT  -> Context / Model Responsibility
+```
+
+### 20v2.5 验证证据覆盖（validate_plan_verification）
+```
+收集计划里出现的证据类型：
+  plan_evidence = {todo.required_evidence for todo in todos
+                   if todo.required_evidence is not None}
+
+对每个 MUST_VERIFY 的 Requirement，用 verifier 反查所需证据：
+  verification_evidence_map = { "test": TESTS_PASSED,
+                                "diff": DIFF_INSPECTED }
+  - verifier 不在表里（如 build / syntax，当前 EvidenceType
+    尚未支持 Plan 级验证）→ 跳过，不报错。
+  - 表里有但 plan_evidence 不包含该证据
+    → issue code="missing_verification_step"
+      "Requirement {id} requires '{verifier}' verification, but the
+       plan does not include the required verification evidence."
+
+含义：如果需求要求“跑测试/看 diff”来验证，那么计划里必须
+真的有一条声明了对应 required_evidence 的条目。
+```
+
+### 20v2.6 需求覆盖（validate_requirement_coverage）
+```
+covered_requirement_ids = 所有 todo.requirement_ids 的并集
+
+只对必须被覆盖的 kind 检查（MUST_CHANGE、MUST_VERIFY）；
+MUST_NOT_MODIFY（运行时约束）与 SOFT_CONSTRAINT（软约束）
+不要求被 todo 覆盖，直接跳过。
+
+若某个 MUST_CHANGE / MUST_VERIFY 的 requirement.id
+不在 covered_requirement_ids 中：
+  → issue code="uncovered_requirement"
+    "Requirement {id} ({kind}) is not covered by any plan item"
+
+这条是 V2 的核心：每个必须落地的需求都必须有 Todo 认领。
+```
+
+### 20v2.7 关键设计取舍
+```
+- 从“形状”到“语义”：v1 只管计划长什么样，v2 管计划是否
+  真正回应了 Requirements，把需求追溯到具体条目。
+- 双向对齐：既检查 todo -> requirement（引用存在、kind 对应），
+  也检查 requirement -> todo（必须覆盖的都要被认领）。
+- 硬约束与软约束分流：MUST_NOT_MODIFY 交给 Runtime Guard，
+  SOFT_CONSTRAINT 交给 Context / 模型自觉，不混进计划校验。
+- 温和降级：EvidenceType 暂不支持 build / syntax 时跳过而非报错，
+  便于后续扩展 verification_evidence_map。
+- 复用 v1 的收集式校验与 normalize_plan_content，
+  新增检查只是往同一个 issues 列表里追加。
+```
+```text
+Plan Validation V2 把计划校验从“形状规范”
+升级为“形状规范 + 需求覆盖”：
+  Todo 用 requirement_ids 认领需求、用 kind 声明性质，
+  validate_plan 保证
+    引用存在、kind 匹配、证据齐备、必须覆盖的需求都有人认领。
+```
+```text
+代码位置（planing.py）：
+- TodoItem.requirement_ids / TodoItem.kind
+- TodoKind(str, Enum)
+- validate_plan(...)                        总入口
+- validate_plan_verification(...)           证据覆盖
+- validate_requirement_references(...)      引用合法性
+- validate_requirement_mapping(...)         kind 对应
+- validate_requirement_coverage(...)        必须覆盖检查
+```
+
+### 已知问题（代码观察，非本总结结论）
+```
+validate_requirement_references 与 validate_requirement_mapping
+中部分分支误用 PlanValidationResult(code=..., message=...) 而不是
+PlanValidationIssue(...)。PlanValidationResult 没有 code/message 参数，
+因此一旦命中 unknown_requirement 或 requirement_kind_mismatch /
+constraint_requirement_reference 分支就会抛
+TypeError: PlanValidationResult.__init__() got an unexpected keyword
+argument 'code'，而不是给出可读的校验信息。
+（这正是本任务初次 set_plan 时触发的报错。）
+

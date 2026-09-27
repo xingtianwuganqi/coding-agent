@@ -3,6 +3,27 @@
 TOOLS = [
     {
         "type": "function",
+        "function": {
+            "name": "set_goal",
+            "description": (
+                "Extract and lock the primary "
+                "objective of the user's task."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "objective": {
+                        "type": "string",
+                    },
+                },
+                "required": [
+                    "objective"
+                ],
+            },
+        },
+    },
+    {
+        "type": "function",
         "name": "list_files",
         "description": "List files and directories inside a directory in the workspace.",
         "parameters": {
@@ -163,6 +184,21 @@ TOOLS = [
                             "content": {
                                 "type": "string",
                             },
+                            "kind": {
+                                "type": "string",
+                                "enum": [
+                                    "analysis",
+                                    "implementation",
+                                    "verification",
+                                ],
+                            },
+                            "requirement_ids": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer",
+                                },
+                                "uniqueItems": True,
+                            },
                             "required_evidence": {
                                 "type": "string",
                                 "enum": [
@@ -174,6 +210,8 @@ TOOLS = [
                         },
                         "required": [
                             "content",
+                            "kind",
+                            "requirement_ids",
                             "required_evidence",
                         ],
                         "additionalProperties": False,
@@ -321,6 +359,83 @@ TOOLS = [
                 },
                 "required": [
                     "requirements"
+                ],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "replan",
+            "description": (
+                "Replace the current execution plan "
+                "when evidence shows that the current "
+                "plan is no longer effective. "
+                "The goal and task requirements "
+                "must remain unchanged."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "enum": [
+                            "assumption_invalid",
+                            "blocked_task",
+                            "repeated_failure",
+                            "stagnation",
+                            "requirement_conflict",
+                        ],
+                    },
+                    "explanation": {
+                        "type": "string",
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "content": {
+                                    "type": "string",
+                                },
+                                "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                        "analysis",
+                                        "implementation",
+                                        "verification",
+                                    ],
+                                },
+                                "requirement_ids": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer",
+                                    },
+                                    "uniqueItems": True,
+                                },
+                                "required_evidence": {
+                                    "type": "string",
+                                    "enum": [
+                                        "none",
+                                        "tests_passed",
+                                        "diff_inspected",
+                                    ],
+                                }
+                            },
+                            "required": [
+                                "content",
+                                "kind",
+                                "requirement_ids",
+                                "required_evidence",
+                            ],
+                            "additionalProperties": False,
+                        },
+                    }
+                },
+                "required": [
+                    "reason",
+                    "explanation",
+                    "items",
                 ],
             },
         },

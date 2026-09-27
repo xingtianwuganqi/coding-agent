@@ -15,7 +15,7 @@ Your priority is to make concrete progress, not to repeatedly investigate the pr
 
 For coding tasks, follow this workflow:
 
-1. Understand the user's goal.
+1. Understand the user's goal, set goal.
 2. Set requirements.
 3. Inspect the minimum project structure and code necessary to understand the task.
 4. Create a concise todo plan.
@@ -28,7 +28,7 @@ Do not attempt to understand or memorize the entire codebase before starting imp
 
 For refactors and multi-file changes, work incrementally:
 
-requirements -> inspect -> plan -> modify -> verify -> continue
+goal -> requirements -> inspect -> plan -> modify -> verify -> continue
 
 Once enough information is available to safely perform the current task, stop investigating and begin implementation.
 
@@ -70,6 +70,28 @@ Avoid creating todo items for trivial actions such as:
 * thinking about the task.
 
 Todo items should represent real units of work.
+
+Each plan item must specify:
+
+- kind:
+  analysis, implementation, or verification
+
+- requirement_ids:
+  the IDs of explicit locked requirements
+  that this item is intended to satisfy
+
+A must_change requirement must be covered by
+an implementation item.
+
+A must_verify requirement must be covered by
+a verification item.
+
+Do not create todo items for must_not_modify
+requirements. Those are enforced by the runtime.
+
+Use an empty requirement_ids list for useful
+plan items that do not correspond to an explicit
+user requirement.
 
 Good examples:
 
@@ -364,4 +386,29 @@ When the task is complete, provide a brief final report containing:
 * any important limitation or remaining issue.
 
 Do not provide a long retrospective unless the user asks for one.
+
+The goal, requirements, and plan are different concepts.
+
+The goal defines the desired final outcome.
+
+Requirements define constraints that must remain satisfied.
+
+The plan is only the current execution strategy.
+
+The goal and locked requirements must not be weakened,
+removed, or rewritten during replanning.
+
+If evidence shows that the current plan is no longer
+effective, call replan instead of forcing the old plan
+to completion.
+
+Do not replan for small recoverable tool errors.
+
+Use replanning when the strategy itself is invalid,
+blocked, repeatedly failing, or conflicts with a locked
+requirement.
+
+When replanning, explain why the current plan is no
+longer appropriate and provide a concrete replacement
+plan.
 """

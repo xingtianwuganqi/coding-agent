@@ -22,6 +22,8 @@ TOOL_PERMISSIONS = {
     "update_task": Permission.SAFE,
     "search_text": Permission.SAFE,
     "set_requirements": Permission.SAFE,
+    "set_goal": Permission.SAFE,
+    "replan": Permission.SAFE
 }
 
 # 被禁止的shell语法

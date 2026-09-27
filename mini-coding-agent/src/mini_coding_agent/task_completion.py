@@ -55,7 +55,7 @@ def get_unfinished_tasks(
     """
     获取未完成的任务
     """
-    for todo in state.todos:
+    for todo in state.plan.items:
         if (todo.status == TaskStatus.COMPLETED
                 and todo.required_evidence is not None
                 and not has_valid_evidence(
@@ -65,7 +65,7 @@ def get_unfinished_tasks(
             todo.status = TaskStatus.PENDING
     return [
         todo 
-        for todo in state.todos
+        for todo in state.plan.items
         if todo.status not in {
             TaskStatus.COMPLETED,
             TaskStatus.BLOCKED
@@ -80,7 +80,7 @@ def has_blocked_tasks(
     """
     return any(
         todo.status == TaskStatus.BLOCKED
-        for todo in state.todos
+        for todo in state.plan.items
     )
 
 def is_task_complete(
@@ -90,12 +90,12 @@ def is_task_complete(
     是否所有的任务都完成了
     """
     get_unfinished_tasks(state)
-    if not state.todos:
+    if not state.plan.items:
         return True
 
     return all(
         todo.status == TaskStatus.COMPLETED
-        for todo in state.todos
+        for todo in state.plan.items
     )
 
 def get_completion_status(
@@ -105,7 +105,7 @@ def get_completion_status(
     获取完成的状态
     """
 
-    if not state.todos:
+    if not state.plan.items:
         return CompletionStatus.INCOMPLETE
 
     unfinished = get_unfinished_tasks(state)
@@ -126,7 +126,7 @@ def evaluate_completion(
     requirements = []
 
     # 1.必须有plan
-    has_plan = bool(state.todos)
+    has_plan = bool(state.plan.items)
 
     requirements.append(
         CompletionRequirement(

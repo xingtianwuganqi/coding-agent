@@ -58,6 +58,14 @@ class AgentMetrics:
     # guard_requirement中记录守护了几次
     requirement_violations: int = 0
 
+    # replan
+    plan_revision: int = 0
+    replans: int = 0
+    replans_by_reason: dict[str, int] = field(
+        default_factory=dict
+    )
+
+
     # 给Metrics增加记录工具的方法
     def record_tool_call(
             self,

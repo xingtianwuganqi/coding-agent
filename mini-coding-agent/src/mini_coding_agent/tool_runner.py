@@ -14,7 +14,9 @@ from .planing import (
     set_plan,
     get_plan,
     update_task,
-    record_progress
+    record_progress,
+    ReplanReason,
+    replan
 )
 from .evidence import (
     CommandResult,
@@ -37,6 +39,9 @@ from .agent_metrics import (
 )
 
 from .agent_trace import AgentTrace
+from .goal import (
+    set_goal
+)
 
 from .failure_recovery import (
     RecoveryAction,
@@ -106,6 +111,12 @@ def execute_tool(
                     success=False,
                     error="User denied the tool call."
                 )
+
+        if name == "set_goal":
+            return set_goal(
+                state=state,
+                **arguments
+            )
 
         if name == "list_files":
             return list_files(**arguments)
@@ -251,6 +262,8 @@ def execute_tool(
                         metrics.model_turns
                     )
 
+                metrics.plan_revision = 1
+
             return result
 
         if name == "update_task":
@@ -287,6 +300,52 @@ def execute_tool(
                 )
 
             return result
+
+        if name == "replan":
+            try:
+                reason = ReplanReason(
+                    arguments["reason"]
+                )
+            except ValueError:
+                return ToolResult.fail(
+                    error=(
+                        "Invalid replan reason"
+                    )
+                )
+
+            result = replan(
+                state=state,
+                items=arguments["items"],
+                reason=reason,
+                explanation=arguments["explanation"],
+                current_turn=metrics.model_turns
+            )
+            if result.success:
+                metrics.replans += 1
+                metrics.plan_revision = state.plan.revision
+                reason_key = reason.value
+                metrics.replans_by_reason[
+                    reason_key
+                ] = (
+                    metrics.replans_by_reason.get(
+                        reason_key,0
+                    ) + 1
+                )
+
+                trace.record(
+                    turn=metrics.model_turns,
+                    event_type="replan",
+                    name=(
+                        f"plan_v"
+                        f"{state.plan.revision}"
+                    ),
+                    detail=(
+                        f"reason={reason.value};"
+                        f"{arguments['explanation']}"
+                    )
+                )
+
+            return  result
 
         return ToolResult(
             success=False,

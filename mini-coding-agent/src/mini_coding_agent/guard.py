@@ -34,7 +34,24 @@ def guard_tool_call(
     '''
     工具调用守卫
     '''
+    # 1.goal gate
+    if name == "set_goal" and state.goal.locked:
+        return (
+            "RUNTIME GUARD: task requirements are already locked. "
+            "Do not call set_goal again; continue the next step."
+        )
 
+    if not state.goal.locked:
+        if name == "set_goal":
+            return None
+        return (
+            "RUNTIME GUARD: "
+            "the task goal has not "
+            "been established yet. "
+            "Call set_goal first."
+        )
+
+    # 2.Requirement gate
     if name == "set_requirements" and state.requirements.locked:
         return (
             "RUNTIME GUARD: task requirements are already locked. "
@@ -52,6 +69,7 @@ def guard_tool_call(
             "from the user's request."
         )
 
+    # 2.Requirement constraints
     requirement_error = guard_requirement_constraints(
         name=name,
         arguments=arguments,
@@ -68,8 +86,27 @@ def guard_tool_call(
         )
         return requirement_error
 
+    # 4.plan gate
+
+    if state.plan.revision == 0:
+        allowed_before_plan = (
+            "set_goal",
+            "set_requirements",
+            "set_plan",
+            "list_files",
+            "read_file",
+            "search_text",
+        )
+
+        if name not in allowed_before_plan:
+            return (
+                "RUNTIME GUARD: "
+                "create a plan before "
+                "performing task actions."
+            )
+
     if name == "set_plan":
-        if state.todos:
+        if state.plan.items:
             return (
                 "RUNTIME GUARD: a todo plan already exists. "
                 "Do not call set_plan again; use update_task to continue it."
@@ -77,8 +114,16 @@ def guard_tool_call(
         state.consecutive_retrieval_count = 0
         return None
 
+    # 5.Replan只能在已有计划后
+    if name == "replan" and state.plan.revision == 0:
+        return (
+            "RUNTIME GUARD: "
+            "there is no current plan "
+            "to replace"
+        )
+
     if name in RETRIEVAL_TOOLS:
-        if not state.todos:
+        if not state.plan.items:
             if state.pre_plan_inspection_count >= MAX_PRE_PLAN_INSPECTIONS:
                 return (
                     "RUNTIME GUARD: enough pre-plan "
@@ -100,7 +145,7 @@ def guard_tool_call(
     if name in ACTION_TOOLS or name == "update_task":
         state.consecutive_retrieval_count = 0
 
-    if not state.todos:
+    if not state.plan:
         return (
             "RUNTIME GUARD: no plan exists yet. "
             "Create a todo plan with set_plan "
