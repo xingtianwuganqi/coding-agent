@@ -3,7 +3,7 @@
 import json
 import time
 from .config import MAX_MODEL_TURN
-from .model_api import call_model
+from .model_api import ModelCallError, call_model
 from .context import (
     build_model_input,
     format_runtime_state,
@@ -127,15 +127,20 @@ def run_agent(task: str) -> str:
             )
 
         # 先压缩旧history，会在内部进行删除
-        compress_history(
-            system_prompt=SYSTEM_PROMPT,
-            tools=TOOLS,
-            task=task,
-            state=state,
-            history_turns=history_turns,
-            metrics=metrics,
-            trace=trace
-        )
+        try:
+            compress_history(
+                system_prompt=SYSTEM_PROMPT,
+                tools=TOOLS,
+                task=task,
+                state=state,
+                history_turns=history_turns,
+                metrics=metrics,
+                trace=trace
+            )
+        except ModelCallError as error:
+            metrics.end_runing()
+            trace.print_trace()
+            return f"Agent stopped: {error}"
 
         print_fixed_context_breakdown(
             system_prompt=SYSTEM_PROMPT,
@@ -186,13 +191,18 @@ def run_agent(task: str) -> str:
 
         print_state_debug(state)
 
-        message = call_model(
-            model_input,
-            instructions=runtime_instructions,
-            tools=TOOLS,
-            thinking=False,
-            debug=True,
-        )
+        try:
+            message = call_model(
+                model_input,
+                instructions=runtime_instructions,
+                tools=TOOLS,
+                thinking=False,
+                debug=True,
+            )
+        except ModelCallError as error:
+            metrics.end_runing()
+            trace.print_trace()
+            return f"Agent stopped: {error}"
         # Preserve reasoning_content alongside tool calls for GLM's next turn.
         # input_items.append(message.model_dump(mode="json", exclude_none=True))
         turn_items = [message.model_dump(mode="json", exclude_none=True)]

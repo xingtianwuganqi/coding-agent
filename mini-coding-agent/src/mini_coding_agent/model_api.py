@@ -2,6 +2,7 @@
 
 import os
 import json
+import time
 from pathlib import Path
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessage
@@ -23,8 +24,14 @@ def _load_local_env() -> None:
 
 _load_local_env()
 
+RETRY_DELAYS = (5, 6, 7, 8, 9, 10)
+
+
+class ModelCallError(RuntimeError):
+    """Raised when every attempt to call the model has failed."""
+
 # Change only this value, then restart the agent.
-PROVIDER = "deepseek"
+PROVIDER = "bai"
 
 PROVIDERS = {
     "zhipu": {
@@ -94,11 +101,30 @@ def call_model(
     # if debug:
     #     print("\n--- Request JSON ---")
     #     print(json.dumps(request, ensure_ascii=False, indent=2), flush=True)
-    with OpenAI(api_key=settings["api_key"], base_url=settings["base_url"]) as client:
-        response = client.chat.completions.create(**request)
+    with OpenAI(
+        api_key=settings["api_key"],
+        base_url=settings["base_url"],
+        max_retries=0,
+    ) as client:
+        for retry_index in range(len(RETRY_DELAYS) + 1):
+            try:
+                response = client.chat.completions.create(**request)
+                if not response.choices:
+                    raise RuntimeError(f"{PROVIDER} returned no response choices")
+                break
+            except Exception as error:
+                if retry_index == len(RETRY_DELAYS):
+                    raise ModelCallError(
+                        f"Model request failed after {retry_index + 1} attempts: {error}"
+                    ) from error
+                delay = RETRY_DELAYS[retry_index]
+                print(
+                    f"Model request failed ({type(error).__name__}: {error}). "
+                    f"Retrying in {delay}s ({retry_index + 1}/{len(RETRY_DELAYS)}).",
+                    flush=True,
+                )
+                time.sleep(delay)
     if debug:
         print("\n--- Response JSON ---")
         print(response.model_dump_json(indent=2), flush=True)
-    if not response.choices:
-        raise RuntimeError(f"{PROVIDER} returned no response choices")
     return response.choices[0].message

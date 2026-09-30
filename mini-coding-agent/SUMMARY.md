@@ -1088,3 +1088,119 @@ TypeError: PlanValidationResult.__init__() got an unexpected keyword
 argument 'code'，而不是给出可读的校验信息。
 （这正是本任务初次 set_plan 时触发的报错。）
 
+
+## 21. Task State Machine / Plan Execution Invariants 状态机
+
+### 概述
+```
+Todo（计划条目）就是这一层的"任务"。
+它的状态不再是可以随意赋值的字段，而是一个受约束的状态机：
+  每次 update_task 都必须先通过 validate_task_transition，
+  只有合法迁移才允许提交（Commit），否则返回 ToolResult.fail。
+状态机的目的：把"计划执行不变量"从提示词的软约束，
+下沉为代码里的硬约束（single in-progress、完成需证据、非法迁移被拒）。
+```
+
+### TaskStatus 状态定义
+```text
+class TaskStatus(Enum):
+    PENDING     = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED   = "completed"
+    BLOCKED     = "blocked"
+```
+
+### 迁移表 TASK_TRANSITIONS（合法边）
+```text
+PENDING     -> { IN_PROGRESS }
+IN_PROGRESS -> { COMPLETED, BLOCKED }
+BLOCKED     -> { IN_PROGRESS }
+COMPLETED   -> { }                # 终态，不可再迁出
+
+未在上面列出的迁移一律非法，例如：
+  PENDING -> COMPLETED            # 必须先 in_progress
+  BLOCKED -> COMPLETED            # 必须先回到 in_progress
+  COMPLETED -> *                  # 终态不可回退
+```
+
+### 校验入口 validate_task_transition（按顺序检查）
+```
+输入：state(AgentState) / todo(TodoItem) / target(TaskStatus)
+返回：TaskTransitionResult(allowed: bool, error: str | None)
+
+1. 禁止同状态更新
+   current == target  -> allowed=False
+   error = "Task {id} is already {status}."
+
+2. State Machine（迁移表）
+   not can_transition_task(current, target)  -> allowed=False
+   error = "Invalid task transitons: {current} -> {target}."
+
+3. Single IN_PROGRESS（唯一进行中不变量）
+   target == IN_PROGRESS 且 has_other_in_progress_task(state, id) -> allowed=False
+   error = "Another task is already in progress."
+
+4. Evidence Guard（完成需证据不变量）
+   target == COMPLETED 且 not has_required_task_evidence(state, todo) -> allowed=False
+   error = "Task {id} requires evidence '{required_evidence}' before it can be completed."
+
+  全部通过 -> allowed=True
+```
+
+### 两个关键不变量及其实现
+```text
+不变量 A：同一时刻只允许一个 IN_PROGRESS
+  - get_in_progress_task(state)         取当前所有 IN_PROGRESS 的 Todo
+  - has_other_in_progress_task(state,id) 判断是否存在"非本任务"的 IN_PROGRESS
+  - 任何把别的任务置为 IN_PROGRESS 的尝试都会被第 3 步拒绝。
+
+不变量 B：Todo 完成前必须提供所需证据
+  - TodoItem.required_evidence: EvidenceType | None（None 表示无证据要求）
+  - has_required_task_evidence(state, todo)：
+      required 为 None            -> True（无需证据）
+      state.evidence 中没有该证据 -> False
+      evidence_revision != state.workspace_revision -> False（证据必须是"当前版本"的）
+    即证据要满足"存在"且"未过期（版本等于 workspace_revision）"两个条件。
+  - 任何证据缺失/过期的 COMPLETED 尝试都会被第 4 步拒绝。
+```
+
+### 与 update_task 的集成（准入 -> 提交）
+```
+update_task(state, metrics, task_id, status, note):
+  1. TaskStatus(status) 解析目标状态，非法值 -> ToolResult.fail
+  2. 在 state.plan.items 中按 id 查找 todo，找不到 -> ToolResult.fail
+  3. 调 validate_task_transition 做准入校验
+     not allowed -> ToolResult.fail(error=validation.error)
+  4. Commit：todo.status = target_status；note 非空则写回 stripped note
+  5. record_progress(...)：迁移成功也算一次真实进展，重置 stagnation 计时
+  返回 ToolResult.ok("Task {id} updated: {old} -> {new}.")
+```
+
+### 代码位置（src/mini_coding_agent/planing.py）
+```text
+- TaskStatus(Enum)                     任务四态
+- TASK_TRANSITIONS: dict[TaskStatus, set[TaskStatus]]   合法迁移表
+- can_transition_task(current, target)  迁移表查询
+- get_in_progress_task(state)           当前进行中的 Todo 列表
+- has_other_in_progress_task(state, id) 单 IN_PROGRESS 检查
+- has_required_task_evidence(state,todo) 完成所需证据检查（版本比对）
+- TaskTransitionResult(allowed, error)  校验结果
+- validate_task_transition(state,todo,target)  状态机总入口
+- update_task(...)                      接入状态机的提交入口
+```
+
+### 相关常量
+```text
+MAX_STAGNANT_TURNS = 5   连续无进展容忍上限（与 record_progress 配合）
+MAX_REPLANS        = 5   重新计划次数上限
+MIN_PLAN_ITEMS     = 2   计划最少条目
+MAX_PLAN_ITEMS     = 7   计划最多条目
+```
+
+### 已修复问题
+```text
+can_transition_task 已使用 TASK_TRANSITIONS.get(current, set()) 查询迁移表。
+has_required_task_evidence 已复用 has_valid_evidence，按 workspace_revision
+判断证据是否属于当前工作区版本。
+```
+
