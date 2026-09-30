@@ -109,6 +109,10 @@ def test_guard_blocks_unknown_tool_without_plan():
 
 def test_guard_blocks_retrieval_without_plan():
     state = AgentState()
+    # The goal gate runs first: a goal must exist before the plan gate
+    # (and the pre-plan inspection budget) can be exercised.
+    state.goal.locked = True
+    state.requirements.locked = True
     # Exhaust the pre-plan inspection budget so the guard fires.
     state.pre_plan_inspection_count = 4
     result = guard_tool_call(
@@ -120,6 +124,8 @@ def test_guard_blocks_retrieval_without_plan():
 
 def test_guard_blocks_requirements_after_locking():
     state = AgentState()
+    # Establish the goal first: it precedes the requirement gate.
+    state.goal.locked = True
     state.requirements.locked = True
     result = guard_tool_call(
         "set_requirements", {"requirements": []}, state,
@@ -130,6 +136,7 @@ def test_guard_blocks_requirements_after_locking():
 
 def test_guard_blocks_plan_replacement():
     state = AgentState()
+    state.goal.locked = True
     state.requirements.locked = True
     state.todos = [TodoItem(id=1, content="inspect")]
     result = guard_tool_call(
@@ -147,6 +154,9 @@ def test_requirements_plan_and_get_plan_workflow(requirements):
     metrics = AgentMetrics()
     trace = AgentTrace()
 
+    # The goal gate precedes the requirement/plan gates.
+    state.goal.locked = True
+
     assert guard_tool_call(
         "set_requirements", {"requirements": requirements}, state, metrics, trace
     ) is None
@@ -156,7 +166,10 @@ def test_requirements_plan_and_get_plan_workflow(requirements):
     assert result.success
     assert state.requirements.locked
 
-    items = [{"content": "Inspect source", "required_evidence": "none"}]
+    items = [
+        {"content": "Inspect source", "required_evidence": "none"},
+        {"content": "Apply fix", "required_evidence": "none"},
+    ]
     assert guard_tool_call("set_plan", {"items": items}, state, metrics, trace) is None
     result = execute_tool("set_plan", {"items": items}, state, metrics, trace)
     assert result.success

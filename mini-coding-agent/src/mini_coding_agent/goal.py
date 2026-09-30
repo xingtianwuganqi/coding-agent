@@ -3,7 +3,7 @@ from .tool_result import ToolResult
 
 @dataclass
 class GoalState: 
-    original_request: str
+    original_request: str = ""
     objective: str = ""
     locked: bool = False
 

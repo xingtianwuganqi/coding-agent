@@ -131,9 +131,7 @@ class TodoItem:
     requirement_ids: list[int] = field(
         default_factory=list
     )
-    kind: TodoKind = field(
-        default_factory=TodoKind
-    )
+    kind: TodoKind = TodoKind.ANALYSIS
 
 class ReplanReason(str, Enum):
     # 原计划建立在错误的认识上
@@ -149,8 +147,8 @@ class ReplanReason(str, Enum):
 
 @dataclass
 class AgentState:
-    goal: GoalState
-    plan: PlanState
+    goal: GoalState = field(default_factory=GoalState)
+    plan: PlanState = field(default_factory=PlanState)
     # todos: list[TodoItem] = field(default_factory=list)
     # evidence: set[EvidenceType] = field(
     #     default_factory=set
@@ -194,6 +192,15 @@ class AgentState:
     requirements: RequirementState = field(
         default_factory=RequirementState
     )
+
+    @property
+    def todos(self) -> list[TodoItem]:
+        """向后兼容别名：todos 即当前 plan 的 items。"""
+        return self.plan.items
+
+    @todos.setter
+    def todos(self, value: list[TodoItem]) -> None:
+        self.plan.items = value
 
 def create_agent_state(
     user_prompt: str,
@@ -316,8 +323,10 @@ def parse_plan_items(
                 )
             )
 
-        # kind
+        # kind（缺省时默认 ANALYSIS）
         kind_value = item.get('kind')
+        if kind_value is None:
+            kind_value = TodoKind.ANALYSIS.value
         try:
             kind = TodoKind(kind_value)
         except ValueError:
@@ -735,190 +744,9 @@ def get_plan(
         content=format_plan(state)
     )
 
-def print_state_debug(
-    state: AgentState,
-) -> None:
-    print("\n--- Runtime State ---")
-
-    print(
-        "Workspace revision:",
-        state.workspace_revision,
-    )
-
-    print("Evidence:")
-
-    if not state.evidence:
-        print("  (none)")
-        return
-
-    for evidence_type, revision in (
-        state.evidence.items()
-    ):
-        valid = (
-            revision
-            == state.workspace_revision
-        )
-
-        print(
-            f"  {evidence_type.value}: "
-            f"revision={revision}, "
-            f"valid={valid}"
-        )
-
-
-def record_progress(
-        state: AgentState,
-        turn: int,
-) -> None:
-    state.last_progress_turn = turn
-    state.stagnation_warnings = 0
-
-
-def tool_caused_progress(
-    name: str,
-    result: ToolResult,
-) -> bool:
-    '''
-    判断“这次工具调用成功了，但它到底算不算真正推进了任务”。
-    '''
-    if not result.success:
-        return False
-
-    progress_tools = {
-        "write_file",
-        "replace_text",
-        "set_plan",
-        "update_task",
-    }
-
-    return name in progress_tools
-
-
-def is_stagnating(
-        state: AgentState,
-        current_turn: int,
-) -> bool:
-    '''
-    判断是不是进入了停滞
-    '''
-    if not state.plan.items:
-        return False
-
-    stagnant_turns = (
-        current_turn - state.last_progress_turn
-    )
-
-    return stagnant_turns >= MAX_STAGNANT_TURNS
-
-
-def build_stagnation_feedback(
-        state: AgentState,
-) -> str:
-    '''
-    构建停滞反馈
-    '''
-    active_task = next(
-        (
-            todo 
-            for todo in state.plan.items
-            if todo.status
-            == TaskStatus.IN_PROGRESS
-        ),
-        None
-    )
-
-    task_text = (
-        active_task.content
-        if active_task
-        else "current task"
-    )
-
-    return (
-        "RUNTIME NOTICE: progress has stalled. "
-        "Several turns have passed without a "
-        "meaningful state change. "
-        f"Current task: {task_text}. "
-        "Use the information already gathered "
-        "to take the next concrete action. "
-        "Do not continue investigating unless "
-        "a specific missing fact blocks progress."
-    )
-
-
-def build_goal_context(
-        state: AgentState
-) -> str:
-
-    if not state.goal.locked:
-        return (
-            "GOAL:\n"
-            "Not established yet. "
-        )
-
-    return (
-        "LOCKED GOAL: \n"
-        f"{state.goal.objective}\n\n"
-        "The goal cannot be changed "
-        "during replanning"
-    )
-
-
-def build_plan_context(
-        state: AgentState,
-) -> str:
-
-    if state.plan.revision == 0:
-        return (
-            "ACTIVE PLAN: \n"
-            "No plan exists yet."
-        )
-
-    lines = [
-        (
-            "ACTIVE PLAN "
-            f"[revision "
-            f"{state.plan.revision}]:"
-        )
-    ]
-
-    for todo in state.plan.items:
-        lines.append(
-            f"- [{todo.status.value}]"
-            f"{todo.id}"
-            f"{todo.content}"
-        )
-
-    if state.plan.replan_count > 0:
-        lines.append("")
-        lines.append(
-            "Previous plan revisions: "
-            f"{state.plan.replan_count}"
-        )
-
-    return "\n".join(lines)
-
-
-def build_runtime_instructions(
-        state: AgentState,
-) -> str:
-
-    parts = [
-        build_goal_context(
-            state
-        ),
-        build_requirement_context(
-            state,
-        ),
-        build_plan_context(
-            state,
-        )
-    ]
-
-    return "\n\n".join(
-        part 
-        for part in parts
-        if part
-    )
+# 上下文渲染函数已拆分到 .runtime_context，
+# 停滞/进展判定函数已拆分到 .stagnation，
+# 在文件末尾统一重新导出，保持对外接口不变。
 
 
 def validate_plan(
@@ -1306,164 +1134,46 @@ def validate_requirement_coverage(
         )
 
 
-TASK_TRANSITIONS: dict[
-    TaskStatus,
-    set[TaskStatus],
-] = {
-    TaskStatus.PENDING: {
-        TaskStatus.IN_PROGRESS
-    },
-    TaskStatus.IN_PROGRESS: {
-        TaskStatus.COMPLETED,
-        TaskStatus.BLOCKED
-    },
-    TaskStatus.BLOCKED: {
-        TaskStatus.IN_PROGRESS
-    },
+# Task 状态机与证据门禁：已拆分到 .task_state
+# 这里重新导出，保持 planing 的对外接口不变。
+from .task_state import (  # noqa: E402
+    TASK_TRANSITIONS,
+    TaskTransitionResult,
+    can_transition_task,
+    get_in_progress_task,
+    has_other_in_progress_task,
+    has_required_task_evidence,
+    validate_task_transition,
+)
 
-    TaskStatus.COMPLETED: set()
-}
+from .runtime_context import (  # noqa: E402
+    build_goal_context,
+    build_plan_context,
+    build_runtime_instructions,
+    print_state_debug,
+)
 
-def can_transition_task(
-        current: TaskStatus,
-        target: TaskStatus,
-) -> bool:
-    '''
-    获取current是否可以转换成target
-    '''
-    allowed_targets = TASK_TRANSITIONS.get(
-        current,
-        set()
-    )
+from .stagnation import (  # noqa: E402
+    build_stagnation_feedback,
+    is_stagnating,
+    record_progress,
+    tool_caused_progress,
+)
 
-    return target in allowed_targets
-
-def get_in_progress_task(
-        state: AgentState,
-) -> list[TodoItem]:
-
-    return [
-        todo 
-        for todo in state.plan.items
-        if (
-            todo.status 
-            == TaskStatus.IN_PROGRESS
-        )
-    ]
-
-def has_other_in_progress_task(
-        state: AgentState,
-        task_id: int
-) -> bool:
-    '''
-    是否存在一个"不是当前task，而且状态为IN_PROGRESS“的 Todo
-    '''
-    return any(
-        todo.id != task_id
-        and (
-            todo.status
-            == TaskStatus.IN_PROGRESS
-        )
-        for todo in state.plan.items
-    )
-
-def has_required_task_evidence(
-        state: AgentState,
-        todo: TodoItem,
-) -> bool:
-
-    '''
-    判断complete是否是已经完成
-    '''
-
-    required = todo.required_evidence
-
-    if required is None:
-        return True
-
-    return has_valid_evidence(state, required)
-
-
-@dataclass
-class TaskTransitionResult:
-    allowed: bool
-    error: str | None = None
-
-
-def validate_task_transition(
-        state: AgentState,
-        todo: TodoItem,
-        target: TaskStatus,
-) -> TaskTransitionResult:
-
-    current = todo.status
-
-    #1 禁止同状态更新
-
-    if current == target:
-        return TaskTransitionResult(
-            allowed=False,
-            error=(
-                f"Task {todo.id} is already "
-                f"{current.value}."
-            )
-        )
-
-    #2 State Machine
-
-    if not can_transition_task(
-        current=current,
-        target=target
-    ):
-        return TaskTransitionResult(
-            allowed=False,
-            error=(
-                "Invalid task transitons: "
-                f"{current.value} -> "
-                f"{target.value}."
-            )
-        )
-
-    #3 Single IN_PROGRESS
-
-    if (
-        target == TaskStatus.IN_PROGRESS
-        and has_other_in_progress_task(
-            state,
-            todo.id,
-        )
-    ): 
-        return TaskTransitionResult(
-            allowed=False,
-            error=(
-                "Another task is already "
-                "in progress."
-            )
-        )
-
-    #4  Evidence Guard
-    if (
-        target == TaskStatus.COMPLETED
-        and not has_required_task_evidence(
-            state,
-            todo
-        )
-    ):
-        evidence_name = (
-            todo.required_evidence.value 
-            if todo.required_evidence
-            else 'unknown'
-        )
-
-        return TaskTransitionResult(
-            allowed=False,
-            error=(
-                f"Task {todo.id} requires "
-                f"evidence '{evidence_name}' "
-                "before it can be completed."
-            )
-        )
-
-    return TaskTransitionResult(
-        allowed=True,
-    )
+__all__ = [
+    "TASK_TRANSITIONS",
+    "TaskTransitionResult",
+    "can_transition_task",
+    "get_in_progress_task",
+    "has_other_in_progress_task",
+    "has_required_task_evidence",
+    "validate_task_transition",
+    "build_goal_context",
+    "build_plan_context",
+    "build_runtime_instructions",
+    "print_state_debug",
+    "build_stagnation_feedback",
+    "is_stagnating",
+    "record_progress",
+    "tool_caused_progress",
+]

@@ -4,6 +4,17 @@
 ``src/mini_coding_agent/planing.py``），代码库其余部分均以该拼写导入。
 本模块存在的原因，是让以 ``planning`` 拼写引用的调用方也能解析到同一套对象。
 
+本模块只负责转发与 plan/pl 相关的公共接口（计划/需求/校验），
+其余逻辑已经整理到 planing 的同级模块中：
+
+- :mod:`mini_coding_agent.task_state`：todo 状态机、证据门禁与转移校验；
+- :mod:`mini_coding_agent.runtime_context`：goal/plan/需求上下文渲染；
+- :mod:`mini_coding_agent.stagnation`：进展记录与停滞判定；
+- :mod:`mini_coding_agent.requirements`：需求相关的数据结构与工具。
+
+plan/pl 相关的实际实现仍位于 :mod:`mini_coding_agent.planing`，
+本模块仅做同名转发/再导出，行为与 planing.py 完全一致。
+
 下方所有 ``validate_*`` 计划校验方法都带有完整中文注释（说明用途、
 校验逻辑、Args 与 Returns，并与 planing.py 中的实现保持一致），
 实际实现委托给 :mod:`mini_coding_agent.planing` 中的同名函数，
@@ -16,6 +27,12 @@ from .planing import (  # noqa: F401
     TaskStatus,
     PlanValidationIssue,
     PlanValidationResult,
+    set_plan,
+    replan,
+    update_task,
+    get_plan,
+    format_plan,
+    parse_plan_items,
     validate_plan as _validate_plan,
     validate_plan_verification as _validate_plan_verification,
     validate_requirement_references as _validate_requirement_references,
@@ -193,6 +210,12 @@ __all__ = [
     "TaskStatus",
     "PlanValidationIssue",
     "PlanValidationResult",
+    "set_plan",
+    "replan",
+    "update_task",
+    "get_plan",
+    "format_plan",
+    "parse_plan_items",
     "validate_plan",
     "validate_plan_verification",
     "validate_requirement_references",
