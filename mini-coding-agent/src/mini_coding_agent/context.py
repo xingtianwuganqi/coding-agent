@@ -358,7 +358,7 @@ def compress_history(
             event_type="compression",
             name="compress_history",
             detail=(
-                f"before_selected_turns = {selected_turns}, "
+                f"before_selected_turns = {selected_turns[:5]}, "
                 f"summarized_budget={estimate_tokens(new_summary)}"
             ),
         )

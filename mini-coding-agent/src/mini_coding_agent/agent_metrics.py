@@ -17,18 +17,19 @@ class AgentMetrics:
     compression_checks: int = 0
     # 上下文压缩次数
     context_compressions: int = 0
-    # 测试次数
-    tests_run: int = 0
-    # 指定计划在第几步
-    plan_created_turn: int | None = None
-    # 第一次写入在第几步
-    first_write_turn: int | None = None
     # 开始时间
     start_time: float = field(
         default_factory=time.time
     )
     # 结束时间
     end_time: float | None = None
+
+    # 测试次数
+    tests_run: int = 0
+    # 指定计划在第几步
+    plan_created_turn: int | None = None
+    # 第一次写入在第几步
+    first_write_turn: int | None = None
 
     # 停滞记录
     stagnation_warnings: int = 0
@@ -45,7 +46,7 @@ class AgentMetrics:
     auto_retries: int = 0
     # 恢复失败
     recovered_failures: int = 0
-
+    # 连续失败
     repeated_failures: int = 0
 
     # verification版本中新增
@@ -185,7 +186,7 @@ class AgentMetrics:
 def is_test_command(
         command: str
 ) -> bool:
-
+    '''判断是不是测试命令'''
     command = command.lower()
 
     test_keywords = [

@@ -176,18 +176,33 @@ def guard_recent_tool_call(
         arguments: dict,
         state: AgentState,
 ) -> str| None:
+    '''
+    guard_recent_tool_call：近期工具调用去重守卫
+
+    仅对检索类工具（list_files / read_file / search_text）生效：
+    根据当前工作区版本、工具名和参数生成调用签名，
+    若该签名在最近 8 次调用中出现过，则判定为重复检索并拦截；
+    否则记录签名，允许本次调用通过。
+
+    设计意图：避免对同一份内容反复检索而浪费上下文预算，
+    同时不干扰写入/校验类工具的调用。
+    '''
+    # 仅对检索类工具进行去重校验
     if name in RETRIEVAL_TOOLS:
+        # 生成当前调用的唯一签名（工作区版本 + 工具名 + 参数）
         signature = tool_signature(
             name=name,
             arguments=arguments,
             state=state
         )
+        # 最近 8 次调用中已出现相同签名，视为重复检索
         if signature in state.recent_tool_calls[-8:]:
             return (
                 "RUNTIME GUARD: duplicate retrieval blocked. "
                 "This exact content was already inspected. "
                 "Use the previous result or continue the plan."
             )
+        # 记录本次调用签名，供后续去重判断使用
         state.recent_tool_calls.append(signature)
     return None
     

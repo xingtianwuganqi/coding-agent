@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING
 from .tool_result import ToolResult
+import re
+
 
 if TYPE_CHECKING:
     from .planing import AgentState
@@ -47,6 +49,108 @@ class RequirementCheck:
     satisfied: bool
     reason: str
 
+# 没有扩展名，但名曲属于文件的常见名称
+EXTENSIONLESS_FILES = {
+    "Makefile",
+    "Dockerfile",
+    "README",
+    "LICENSE",
+    "COPYING",
+    "CONTRIBUTING",
+    "CHANGELOG",
+    "INSTALL",
+    "TODO",
+    ".gitignore",
+    ".env",
+}
+
+def normalize_file_target(
+        target: str,
+) -> str:
+    '''
+    将 Requirement Target 规范化为项目相对文件路径
+
+    V1 仅支持文件级target， 不支持函数名或者类名
+    参数：
+        target: 模型传入的文件路径
+
+    返回：
+        规范化后的项目相对文件路径
+
+    异常：
+        ValueError: 如果 target 不是有效的文件路径
+    '''
+
+    # 1. 类型检查
+    if not isinstance(target, str):
+        raise ValueError(
+            f"Requirement target must be a string"
+        )
+
+    # 2. 去除空格，同一路径分隔符
+    target = target.strip().replace("\\", "/")
+
+    if not target:
+        raise ValueError(
+            f"Requirement target cannot be empty"
+        )
+
+    # 3. 不允许绝对路径
+    if target.startswith("/") or target.startswith("~") or re.match(r"^[a-zA-Z]:", target):
+        raise ValueError(
+            f"Requirement target must be a relative path"
+        )
+
+    # 4. 不允许父目录跳转
+    parts = target.split("/")
+    if any(part in ("..", ".", "") for part in parts):
+        raise ValueError(
+            f"Requirement target contains invalid path segments: {target}"
+        )
+
+    path = PurePosixPath(target)
+    # 5. 拦截单独的函数名等非文件目标
+    # 注意：这是 V1的约束， 不是通用文件识别算法
+    if len(path.parts) == 1 and path.suffix == "" and path.name not in EXTENSIONLESS_FILES:
+        raise ValueError(
+            f"Invalid file target: '{target}'. "
+            "Expected a file path, not a symbol name."
+        )
+
+    return path.as_posix()
+
+def validate_requirement_payloads(
+        items: list[dict],
+) -> list[dict]:
+    '''
+    校验并规范化模型传入的 Requirements。
+    校验失败直接抛出 ValueError.
+    不允许进入正式 Requirement 状态
+    '''
+    validated = []
+    for index, item in enumerate(items, start=1):
+
+        # 避免原地修改模型传入的字典
+        normalized_item = item.copy()
+        kind = normalized_item.get("kind")
+        target = normalized_item.get("target")
+
+        # V1 先只约束 MUST_CHANGE 
+        if kind == RequirementKind.MUST_CHANGE.value:
+            # 没有指定target 时，保留旧版本通用修改语义
+            if target is not None and target != "":
+                try:
+                    normalized_target = normalize_file_target(target)
+                    normalized_item["target"] = normalized_target
+                except ValueError as exc:
+                    raise ValueError(
+                        f"Requirement {index} has invalid target: {exc}"
+                    )
+
+        validated.append(normalized_item)
+    return validated
+
+
 def set_requirements(
     state: AgentState,
     requirements: list[dict],
@@ -63,9 +167,28 @@ def set_requirements(
             )
         ) 
 
+    # 获取模型传入的数据，在状态发生修改前进行校验：
+    try:
+        validated_requirements = validate_requirement_payloads(
+            requirements
+        )
+    except ValueError as exc:
+        return ToolResult.fail(
+            error=(
+                f"REQUIREMENT_VALIDATION_ERROR: {exc}\n"
+                "Use a workspace-relative file path "
+                "instead of a function or class name."
+            )
+        )
+        # return (
+        #     f"REQUIREMENT_VALIDATION_ERROR: {exc}\n"
+        #     "Use a workspace-relative file path "
+        #     "instead of a function or class name."
+        # )
+
     parsed: list[TaskRequirement] = []
 
-    for index, item in enumerate(requirements):
+    for index, item in enumerate(validated_requirements):
         kind_value = item.get('kind')
 
         description = item.get("description", "")
@@ -152,8 +275,17 @@ def set_requirements(
 
 
 def build_requirement_context(
-        state: AgentState,
+        state: AgentState,  # 当前代理状态
 ) -> str:
+    """
+    构建任务需求上下文。
+
+    参数:
+        state (AgentState): 代理的状态，包含锁定的需求信息。
+
+    返回:
+        str: 表示任务需求的字符串，如果需求未被提取则返回错误消息。
+    """
 
     if not state.requirements.locked:
         return (
@@ -210,6 +342,23 @@ from pathlib import PurePosixPath
 def normalize_path(
     path: str,
 ) -> str:
+    '''
+    将路径规范化为 Posix 写法的项目相对路径（宽松版，不报错）
+
+    参数：
+        path: 任意待规范化的路径字符串
+
+    返回：
+        规范化后的路径：
+        - 反斜杠 "\\" 统一替换为 "/"
+        - 去掉开头的 "./"
+
+    说明：
+        这里只做字符串层面的统一，不做合法性校验；
+        需要严格校验文件目标时请使用 normalize_file_target
+    '''
+
+    # 统一分隔符为 "/"（PurePosixPath 会把 "\\" 当普通字符，需先替换）
     return (
         str(
             PurePosixPath(path)
@@ -221,11 +370,40 @@ def path_matches_target(
         path: str,
         target: str,
 ) -> bool:
+    '''
+    判断一个路径是否命中 Requirement Target（文件或目录）
 
+    语义：
+    - 命中 = 两者完全相同，或 target 是 path 的某一级父目录
+    - target 可以是文件路径，也可以是目录路径；
+      目录路径匹配其自身以及其下所有子文件/子目录
+    - 匹配是前缀 + 边界判定，而不是纯字符串前缀：
+      target="src/app" 能命中 "src/app/main.py"，
+      但不会命中 "src/app2/main.py"（按路径段比较，避免误判）
+
+    参数：
+    - path：待检查的路径（通常是实际修改的文件路径），项目相对路径
+    - target：需求中声明的目标路径，项目相对路径
+
+    返回值：
+    - True：path 等于 target，或 path 位于 target 目录之下
+    - False：不匹配
+
+    实现步骤：
+    1. 先把两个路径规范化，消除 "./" 前缀、反斜杠、".." 等写法差异，
+       使 "auth.py"、"./auth.py"、"src\\auth.py" 等形式可以统一比较
+    2. 用 PurePosixPath 按路径段（而不是按字符）进行比较
+    3. 完全相等直接命中
+    4. 否则检查 target 是否出现在 path 的各级父目录中，
+       等价于“path 位于 target 目录之下”
+    '''
+
+    # 统一两个路径的写法，避免因 "./"、反斜杠或多余分隔符导致误判
     normalized_path = normalize_path(path)
 
     normalized_target = normalize_path(target)
 
+    # 转成 PurePosixPath，使后续比较基于路径段（parts）而不是原始字符串
     path_obj = PurePosixPath(
         normalized_path
     )
@@ -234,10 +412,37 @@ def path_matches_target(
         normalized_target
     )
 
+    # 情况一：路径完全相同，直接命中
     if path_obj == target_obj:
         return True
 
+    # 情况二：target 是 path 的父目录之一，说明 path 在该目录之下
+    # 注意：parents 是按路径段比较的，因此 "src/app" 不会命中 "src/app2/x.py"
     return target_obj in path_obj.parents
+
+
+
+def path_matches_file_target(
+        changed_path: str,
+        target: str,
+) -> bool:
+    '''
+    判断实际修改的文件是否等于 Requirement Target
+
+    两个参数都要求使用项目相对路径
+    '''
+    try:
+        normalized_changed_path = normalize_file_target(
+            changed_path
+        )
+        normalized_target = normalize_file_target(
+            target
+        )
+    except ValueError:
+        return False
+
+    return normalized_changed_path == normalized_target
+
 
 
 MUTATION_TOOLS = {
@@ -292,8 +497,29 @@ def has_required_verification(
     state,
     requirement: TaskRequirement,
 ) -> bool:
+    """
+    判断某条 MUST_VERIFY 需求是否已被满足。
 
-    
+    判定规则：
+
+    1. 只认可 ``record.success is True`` 的验证记录；
+    2. 记录类型必须与需求的 ``verifier`` 一致；
+    3. 记录必须对应当前代码/工作区版本：
+
+       - ``verifier == "diff"`` 时比较
+         ``workspace_revision``；
+       - 其他类型比较 ``code_revision``；
+
+       版本不一致说明验证结果已过期，不予认可。
+
+    4. 若需求指定了 ``command_contains``，则要求
+       验证记录的 ``source`` 中包含该命令片段
+       （大小写不敏感）。
+
+    从最新的记录往前遍历，一旦找到满足上述全部
+    条件的记录即返回 True；全部检查完仍未找到则
+    返回 False。
+    """
 
     expected_kind = (
         requirement.verifier
@@ -387,10 +613,36 @@ def evaluate_requirement(
                 reason="Workspace change required."
             )
 
+        # 指定了 target
+        # V1 要求其必须是文件路径
+
+        try:
+            normalized_target = normalize_file_target(
+                requirement.target
+            )
+        except ValueError as exc:
+
+            return RequirementCheck(
+                requirement_id=requirement.id,
+                satisfied=False,
+                reason=(
+                    f"Invalid requirement target: "
+                    f"{requirement.target}. "
+                    f"Error: {exc}"
+                )
+            )
+
+        # satisfied = any(
+        #     path_matches_target(
+        #         path=changed_path,
+        #         target=requirement.target,
+        #     )
+        #     for changed_path in state.changed_files
+        # )
         satisfied = any(
-            path_matches_target(
-                path=changed_path,
-                target=requirement.target,
+            path_matches_file_target(
+                changed_path=changed_path,
+                target=normalized_target,
             )
             for changed_path in state.changed_files
         )

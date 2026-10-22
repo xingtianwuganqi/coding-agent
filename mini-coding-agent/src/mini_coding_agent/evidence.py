@@ -116,11 +116,13 @@ def mark_workspace_changed(
 ) -> None:
     state.workspace_revision += 1
 
-# 写一个判断Evidence是否有效的方法
 def has_valid_evidence(
         state: AgentState,
         evidence_type: EvidenceType
 ) -> bool:
+    '''
+    # 判断Evidence是否有效的方法
+    '''
 
     evidence_revision = state.evidence.get(
         evidence_type

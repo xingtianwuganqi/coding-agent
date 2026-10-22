@@ -55,23 +55,31 @@ def get_unfinished_tasks(
     """
     获取未完成的任务
     """
-    for todo in state.plan.items:
-        if (todo.status == TaskStatus.COMPLETED
-                and todo.required_evidence is not None
-                and not has_valid_evidence(
-                    state=state, 
-                    evidence_type=todo.required_evidence)
-        ):
-            todo.status = TaskStatus.PENDING
-    return [
-        todo 
-        for todo in state.plan.items
-        if todo.status not in {
-            TaskStatus.COMPLETED,
-            TaskStatus.BLOCKED
-        }
-    ]
+    unfinished = []
 
+    for todo in state.plan.items:
+
+        if todo.status == TaskStatus.BLOCKED:
+            continue
+
+        if todo.status != TaskStatus.COMPLETED:
+            unfinished.append(todo)
+            continue
+
+        if todo.required_evidence is None:
+            continue
+
+        valid = has_valid_evidence(
+            state=state,
+            evidence_type=todo.required_evidence,
+        )
+
+        if not valid:
+            unfinished.append(todo)
+
+    return unfinished
+        
+    
 def has_blocked_tasks(
         state: AgentState,
 ) -> bool:

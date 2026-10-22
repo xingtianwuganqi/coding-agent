@@ -24,14 +24,14 @@ def _load_local_env() -> None:
 
 _load_local_env()
 
-RETRY_DELAYS = (5, 6, 7, 8, 9, 10)
+RETRY_DELAYS = (5, 9, 15, 23, 31, 50, 60, 80, 100, 120, 150, 180, 230)  # seconds
 
 
 class ModelCallError(RuntimeError):
     """Raised when every attempt to call the model has failed."""
 
 # Change only this value, then restart the agent.
-PROVIDER = "bai"
+PROVIDER = "302"
 
 PROVIDERS = {
     "zhipu": {
@@ -56,14 +56,19 @@ PROVIDERS = {
     },
     "openrouter": {
         "base_url": "https://openrouter.ai/api/v1",
-        "model": "qwen/qwen3.8-27b:free",
+        "model": "minimax/minimax-m3.1-flash:free",
         "api_key": os.getenv("OPENROUTER_API")
     },
     "bai": {
         "base_url": "https://api.b.ai/v1",
         "model": "deepseek-v4.1-flash",
         "api_key": os.getenv("BAI_API_KEY"),
-    }
+    },
+    "302": {
+        "base_url": "https://api.302ai.com/v1",
+        "model": "qwen3.8-flash",
+        "api_key": os.getenv("302_API_KEY"),
+    },
 }
 
 

@@ -61,6 +61,7 @@ def is_stagnating(
         current_turn - state.last_progress_turn
     )
 
+    # 判断距离上次进展（progress_tools中内容）的轮数是否超过阈值
     return stagnant_turns >= MAX_STAGNANT_TURNS
 
 

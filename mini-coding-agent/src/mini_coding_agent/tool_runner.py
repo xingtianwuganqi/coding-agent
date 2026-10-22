@@ -87,7 +87,9 @@ def execute_tool(
         metrics: AgentMetrics,
         trace: AgentTrace,
 ) -> ToolResult:
-
+    '''
+    真正的调用工具
+    '''
     try:
         # 未知工具直接返回，避免被误判为被禁止的工具
         if name not in TOOL_PERMISSIONS:
@@ -375,6 +377,27 @@ def execute_tool_with_recovery(
     trace,
     current_turn: int,
 ) -> ToolResult:
+
+    '''
+    Runtime 的故障恢复入口，在 execute_tool 外层包一层恢复策略。
+
+    流程：
+    1. 先执行一次工具；成功则清除连续失败计数并直接返回。
+    2. 失败时通过 handle_tool_failure 对错误分类、记录签名并得到
+       FailureDecision 和连续失败次数 failure_count，同时写入 trace。
+    3. 仅当 decision.auto_retry 为 True（瞬时错误 + 只读安全工具 +
+       首次失败）时，Runtime 自动重试一次：
+       - 重试成功：记 recovered_failures、清除失败 streak、写 recovered
+         trace 并返回重试结果；
+       - 重试仍失败：再次 handle_tool_failure，failure_count >= 2 时记
+         repeated_failures，并用 build_failure_result 返回带恢复指引的
+         失败结果。
+    4. 不允许自动重试时，failure_count >= 2 时记 repeated_failures，
+       直接返回 build_failure_result 构造的失败结果（含 RUNTIME
+       RECOVERY 指引），由模型决定下一步。
+
+    注意：最多只会自动重试一次，不会无限重试。
+    '''
 
     # =========================
     # 第一次执行

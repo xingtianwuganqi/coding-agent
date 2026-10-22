@@ -95,7 +95,9 @@ class FailureState:
     '''
     故障状态
     '''
+    # 最后的签名
     last_signature: str | None = None
+    # 连续计数
     consecutive_count: int = 0
 
 @dataclass

@@ -185,20 +185,29 @@ def has_valid_evidence(
 def get_unfinished_tasks(
         state: AgentState,
 ) -> list[TodoItem]:
+    '''
+    获取未完成的任务列表
+    '''
+    unfinished = []
+
     for todo in state.todos:
-        if (todo.status == TaskStatus.COMPLETED
-                and todo.required_evidence is not None
-                and not has_valid_evidence(state, todo.required_evidence)):
-            todo.status = TaskStatus.PENDING
-    return [
-        todo 
-        for todo in state.todos
-        if todo.status 
-        not in {
-            TaskStatus.COMPLETED,
-            TaskStatus.BLOCKED
-        }
-    ]
+        if todo.status == TaskStatus.BLOCKED:
+            continue
+        if todo.status != TaskStatus.COMPLETED:
+            unfinished.append(todo)
+            continue
+
+        if (todo.required_evidence is None):
+            continue
+
+        valid = has_valid_evidence(
+            state,
+            todo.required_evidence
+        )
+        if not valid:
+            unfinished.append(todo)
+
+    return unfinished
 
 
 def has_blocked_tasks(

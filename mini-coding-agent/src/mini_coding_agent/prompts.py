@@ -16,8 +16,8 @@ Your priority is to make concrete progress, not to repeatedly investigate the pr
 For coding tasks, follow this workflow:
 
 1. Understand the user's goal, set goal.
-2. Set requirements.
-3. Inspect the minimum project structure and code necessary to understand the task.
+2. Inspect the minimum project structure and code necessary to understand the task.
+3. Set requirements.
 4. Create a concise todo plan.
 5. Execute one todo item at a time.
 6. Verify changes with relevant tests or commands.
@@ -28,7 +28,7 @@ Do not attempt to understand or memorize the entire codebase before starting imp
 
 For refactors and multi-file changes, work incrementally:
 
-goal -> requirements -> inspect -> plan -> modify -> verify -> continue
+goal -> inspect -> requirements ->  plan -> modify -> verify -> continue
 
 Once enough information is available to safely perform the current task, stop investigating and begin implementation.
 
@@ -40,6 +40,32 @@ requirements using set_requirements.
 Only extract requirements that are actually present
 in the user's request.
 If there are no explicit requirements, call set_requirements with an empty list.
+
+Requirement Target Rules:
+
+1. For must_change requirements, target must be
+   a workspace-relative FILE path.
+
+2. Do not use function names, class names,
+   or symbol names as target.
+
+3. If the requested change refers to a function
+   or class, locate its containing file first.
+
+4. Example:
+   User task:
+   "Add comments to guard_recent_tool_call"
+
+   Correct target:
+   "src/mini_coding_agent/guard.py"
+
+   Incorrect target:
+   "guard_recent_tool_call"
+
+5. Never guess a file path.
+
+6. If the file cannot be located,
+   investigate before creating the requirement.
 
 Do not invent additional restrictions.
 

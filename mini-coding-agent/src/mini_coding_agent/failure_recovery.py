@@ -34,6 +34,7 @@ class FailureKind(str, Enum):
     # 未知的
     UNKNOWN = "unknown"
 
+# 重试动作
 class RecoveryAction(str, Enum):
     # 重试
     RETRY = "retry"
@@ -409,6 +410,7 @@ def record_failure(
 def clear_failure_streak(
         state: AgentState
 ) -> None:
+    # 清除连续错误的状态
     state.failure.last_signature = None
     state.failure.consecutive_count = 0
 
@@ -423,7 +425,7 @@ def handle_tool_failure(
     int,
 ]:
     '''
-    处理出现错误
+    处理出现错误，将前面的函数组合起来，返回决策和错误个数
     '''
     # 对错误进行分类
     failure_kind = classify_failure(

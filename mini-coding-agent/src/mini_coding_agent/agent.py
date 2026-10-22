@@ -51,8 +51,6 @@ from .guard import (
 )
 from .replanning import build_replan_feedback
 
-NEED_SLEEP: bool = True
-
 def run_agent(task: str) -> str:
 
     state = create_agent_state(
@@ -455,5 +453,3 @@ def run_agent(task: str) -> str:
         history_turns.append(
             turn_items
         )
-        # if NEED_SLEEP:
-        #     time.sleep(30)

@@ -391,6 +391,36 @@ Todo 被标记 blocked，并给出原因
 
 ## 16. Failure Recovery & Retry Policy。 故障恢复与重试策略
 
+run_agent()
+    │
+    ├── 模型产生 tool_call
+    │
+    ▼
+ToolRunner / execute_tool()
+    │
+    ├── Guard
+    │
+    ├── 真正执行 Tool
+    │
+    ▼
+ToolResult
+    │
+    ├── success
+    │       ↓
+    │   正常继续
+    │
+    └── failure
+            ↓
+    handle_tool_failure()
+            ↓
+    classify_failure()
+            ↓
+    FailureDecision
+       │          │
+       │          └── 交给模型换策略
+       │
+       └── Runtime 自动 retry
+
 ### 16.1 新增ToolResult，将工具调用execute_tool和其他工具调用返回的数据统一成ToolResult
 
 新增 `tool_result.py`，定义统一的结果数据结构（`@dataclass ToolResult`）：
