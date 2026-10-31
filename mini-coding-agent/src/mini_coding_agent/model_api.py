@@ -24,7 +24,33 @@ def _load_local_env() -> None:
 
 _load_local_env()
 
-RETRY_DELAYS = (5, 9, 15, 23, 31, 50, 60, 80, 100, 120, 150, 180, 230)  # seconds
+RETRY_DELAYS = tuple(5 + index for index in range(6))  # seconds
+
+# Debug output is deliberately bounded. Printing a full model response can
+# produce a single line with tens of thousands of characters, which has been
+# observed to crash Terminal.app on macOS while it scans text for URLs.
+DEBUG_PREVIEW_CHARS = 800
+
+
+def _preview(
+        text: object,
+        limit: int = DEBUG_PREVIEW_CHARS,
+) -> str:
+    """Return a bounded single-value preview for terminal output."""
+    if text is None:
+        return ""
+
+    value = str(text)
+
+    if len(value) <= limit:
+        return value
+
+    omitted = len(value) - limit
+
+    return (
+        value[:limit]
+        + f"... [truncated {omitted} chars]"
+    )
 
 
 class ModelCallError(RuntimeError):
@@ -69,6 +95,11 @@ PROVIDERS = {
         "model": "qwen3.8-flash",
         "api_key": os.getenv("302_API_KEY"),
     },
+    "opencode": {
+        "base_url": "https://opencode.ai/inference/openai/v1",
+        "model": "deepseek-v4.1-flash-free",
+        "api_key": os.getenv("OPENCODE_API")
+    }
 }
 
 
@@ -124,12 +155,30 @@ def call_model(
                     ) from error
                 delay = RETRY_DELAYS[retry_index]
                 print(
-                    f"Model request failed ({type(error).__name__}: {error}). "
+                    f"Model request failed ({type(error).__name__}: "
+                    f"{_preview(error)}). "
                     f"Retrying in {delay}s ({retry_index + 1}/{len(RETRY_DELAYS)}).",
                     flush=True,
                 )
                 time.sleep(delay)
+    message = response.choices[0].message
     if debug:
-        print("\n--- Response JSON ---")
-        print(response.model_dump_json(indent=2), flush=True)
-    return response.choices[0].message
+        print("\n--- Model Response (truncated) ---")
+        if message.content:
+            print("content:", _preview(message.content))
+        reasoning = getattr(
+            message,
+            "reasoning_content",
+            None,
+        )
+        if reasoning:
+            print("reasoning:", _preview(reasoning))
+        for call in (message.tool_calls or []):
+            print(
+                "tool_call:",
+                call.function.name,
+                "args:",
+                _preview(call.function.arguments, 1000),
+            )
+        print("---------------------------------", flush=True)
+    return message

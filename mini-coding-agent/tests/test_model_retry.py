@@ -25,6 +25,14 @@ class FakeClient:
         return SimpleNamespace(choices=[SimpleNamespace(message=outcome)])
 
 
+def test_preview_truncates_long_terminal_output():
+    preview = model_api._preview("x" * 2000, limit=100)
+
+    assert len(preview) < 200
+    assert preview.startswith("x" * 100)
+    assert "[truncated 1900 chars]" in preview
+
+
 def test_retry_starts_at_five_seconds_for_each_model_call(monkeypatch):
     client = FakeClient([
         RuntimeError("429"), RuntimeError("temporary"), "first",

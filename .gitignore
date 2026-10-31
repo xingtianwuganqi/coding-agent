@@ -153,6 +153,7 @@ activemq-data/
 !.env.example
 .envrc
 .venv
+/mini-coding-runtime/
 env/
 venv/
 ENV/

@@ -12,7 +12,7 @@ independently of each other. Both should be kept.
 
 ## Source evidence
 
-File: `src/mini_coding_agent/planing.py`
+File: `src/mini_coding_agent/planning.py` (merged from the former obsolete-spelling module)
 
 Both functions are invoked from the same plan-validation pipeline:
 

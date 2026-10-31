@@ -6,7 +6,7 @@ import shlex
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .planing import AgentState
+    from .planning import AgentState
 
 
 class EvidenceType(Enum):

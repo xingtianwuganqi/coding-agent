@@ -19,7 +19,7 @@ from .model_api import (
     call_model
 )
 
-from .planing import (
+from .planning import (
     AgentState,
     format_plan
 )

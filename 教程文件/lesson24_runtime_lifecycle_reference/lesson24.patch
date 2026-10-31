@@ -1,0 +1,749 @@
+--- a/src/mini_coding_agent/agent.py
++++ b/src/mini_coding_agent/agent.py
+@@ -16,17 +16,11 @@
+     create_agent_state,
+     format_plan,
+     print_state_debug,
+-    record_progress,
+-    tool_caused_progress,
+-    is_stagnating,
+     build_stagnation_feedback,
+     build_runtime_instructions
+ )
+ from .task_completion import (
+     CompletionStatus,
+-    get_completion_status,
+-    get_unfinished_tasks,
+-    evaluate_completion,
+     build_completion_feedback
+ )
+ from .prompts import SYSTEM_PROMPT
+@@ -50,6 +44,47 @@
+     guard_recent_tool_call,
+ )
+ from .replanning import build_replan_feedback
++from .runtime_lifecycle import (
++    LifecycleAction, LifecycleDecision, RunOutcome, StopReason,
++    RuntimeBudget, ProgressTracker, check_lifecycle,
++)
++
++
++def finish_agent(
++    *,
++    state: AgentState,
++    metrics: AgentMetrics,
++    trace: AgentTrace,
++    decision: LifecycleDecision,
++    preferred_text: str = "",
++) -> str:
++    """统一的单次终止出口：无需模型继续决定能否停止。"""
++    metrics.run_outcome = decision.outcome.value if decision.outcome else None
++    metrics.stop_reason = decision.reason.value if decision.reason else None
++    trace.record(
++        turn=metrics.model_turns,
++        event_type="lifecycle_end",
++        name=metrics.run_outcome or "unknown",
++        detail=metrics.stop_reason or "requirements_satisfied",
++    )
++    metrics.end_runing()
++    trace.print_trace()
++
++    # 已通过 Runtime 检查，才允许返回模型此前的总结文字。
++    if decision.outcome == RunOutcome.COMPLETE and preferred_text.strip():
++        return preferred_text.strip()
++
++    missing = [f"- {r.name}: {r.reason}" for r in decision.report.missing]
++    changed = sorted(state.changed_files)
++    lines = [
++        f"Outcome: {metrics.run_outcome}",
++        f"Reason: {metrics.stop_reason or 'requirements_satisfied'}",
++        f"Model turns: {metrics.model_turns}",
++        "Changed files: " + (", ".join(changed) if changed else "none"),
++        "Unmet conditions:",
++        *(missing or ["- none"]),
++    ]
++    return "\n".join(lines)
+ 
+ def run_agent(task: str) -> str:
+ 
+@@ -64,65 +99,41 @@
+     trace = AgentTrace()
+ 
+ 
+-    allow_blocked_final = False
+-    
+-    # input_items = [
+-    #     {
+-    #         "role": "user",
+-    #         "content": task,
+-    #     }
+-    # ]
+-
+-    history_turns : list[list] = []
+-
+-    turn = 0
++    # 本课单独追踪“真实里程碑”，不依赖旧的 record_progress()。
++    budget = RuntimeBudget(
++        max_model_turns=min(MAX_MODEL_TURN, 120),
++        max_no_progress_turns=30,
++        warn_no_progress_turns=12,
++    )
++    progress = ProgressTracker()
++    history_turns: list[list] = []
++
++    progress.observe(
++        state=state,
++        report=check_lifecycle(state, 0, progress, budget).report,
++        turn=0,
++    )
+ 
+     while True:
+-        turn += 1
+-        metrics.model_turns += 1
+-
+-        trace.record(
+-            turn=metrics.model_turns,
+-            event_type="model_turn",
+-            name="call_model",
+-        )
+-
+-        if turn >= MAX_MODEL_TURN:
+-            metrics.end_runing()
+-            trace.print_trace()
+-            return (
+-                "Agent stopped because the maximum "
+-                "number of model turns was reached."
+-            )
+-        print(f"\n --- Agent step {turn} ---")
+-
+-        # 构建是否停滞
+-        if is_stagnating(
+-            state=state,
+-            current_turn=metrics.model_turns
+-        ):
+-            trace.record(
+-                turn=metrics.model_turns,
+-                event_type="stagnation",
+-                name="progress_guard",
+-                detail=(
+-                    f"last_progress_turn="
+-                    f"{state.last_progress_turn}"
+-                ),
+-            )
++        # 模型调用之前先判定：已完成就不要继续消耗 Token。
++        decision = check_lifecycle(state, metrics.model_turns, progress, budget)
++        metrics.completion_checks += 1
++        if decision.action != LifecycleAction.CONTINUE:
++            return finish_agent(state=state, metrics=metrics, trace=trace, decision=decision)
++
++        # 仅警告一次；达到硬阈值则由上面的 Controller 直接终止。
++        if progress.should_warn(metrics.model_turns, budget):
+             metrics.stagnation_warnings += 1
+             state.stagnation_warnings += 1
+-            stagnation_feedback = build_stagnation_feedback(
+-                state=state
+-            )
+-            history_turns.append(
+-                [
+-                    {
+-                        "role": "user",
+-                        "content": stagnation_feedback
+-                    }
+-                ]
+-            )
++            history_turns.append([{
++                "role": "user",
++                "content": build_stagnation_feedback(state),
++            }])
++
++        metrics.model_turns += 1
++        turn = metrics.model_turns
++        print(f"\n --- Agent step {turn} ---")
++        trace.record(turn=turn, event_type="model_turn", name="call_model")
+ 
+         # 先压缩旧history，会在内部进行删除
+         try:
+@@ -136,8 +147,14 @@
+                 trace=trace
+             )
+         except ModelCallError as error:
+-            metrics.end_runing()
+-            trace.print_trace()
++            failed_report = check_lifecycle(state, metrics.model_turns, progress, budget).report
++            decision = LifecycleDecision(
++                action=LifecycleAction.TERMINATE,
++                report=failed_report,
++                outcome=RunOutcome.STOPPED,
++                reason=StopReason.MODEL_ERROR,
++            )
++            finish_agent(state=state, metrics=metrics, trace=trace, decision=decision)
+             return f"Agent stopped: {error}"
+ 
+         print_fixed_context_breakdown(
+@@ -198,8 +215,14 @@
+                 debug=True,
+             )
+         except ModelCallError as error:
+-            metrics.end_runing()
+-            trace.print_trace()
++            failed_report = check_lifecycle(state, metrics.model_turns, progress, budget).report
++            decision = LifecycleDecision(
++                action=LifecycleAction.TERMINATE,
++                report=failed_report,
++                outcome=RunOutcome.STOPPED,
++                reason=StopReason.MODEL_ERROR,
++            )
++            finish_agent(state=state, metrics=metrics, trace=trace, decision=decision)
+             return f"Agent stopped: {error}"
+         # Preserve reasoning_content alongside tool calls for GLM's next turn.
+         # input_items.append(message.model_dump(mode="json", exclude_none=True))
+@@ -207,139 +230,27 @@
+         tool_calls = message.tool_calls or []
+ 
+         if not tool_calls:
+-            # Completion Protocol
+-            report = evaluate_completion(state=state)
++            # 模型停止调用工具，并不等于任务完成。
++            decision = check_lifecycle(state, metrics.model_turns, progress, budget)
+             metrics.completion_checks += 1
+-            missing_names = [
+-                item.name
+-                for item in report.missing
+-            ]
+             trace.record(
+                 turn=metrics.model_turns,
+                 event_type="completion_check",
+-                name="completion_protocol",
+-                detail=(
+-                    f"completion={report.complete}"
+-                    f"missing={missing_names}"
++                name="no_tools",
++                detail=f"status={decision.report.complete.value}",
++            )
++            if decision.action != LifecycleAction.CONTINUE:
++                return finish_agent(
++                    state=state, metrics=metrics, trace=trace,
++                    decision=decision, preferred_text=message.content or "",
+                 )
+-            )
+-
+-            # 真正完成
+-            if report.complete == CompletionStatus.COMPLETE:
+-                metrics.end_runing()
+-                trace.print_trace()
+-                return message.content or ""
+-
+-            if  report.complete == CompletionStatus.BLOCKED and allow_blocked_final:
+-                metrics.end_runing()
+-                trace.print_trace()
+-                return message.content or ""
+-
+-
+-            if report.complete == CompletionStatus.INCOMPLETE:
+-
+-                metrics.completion_rejections += 1
+-
+-                feed_back = build_completion_feedback(
+-                    report=report,
+-                    state=state
+-                )
+-
+-                turn_items.append(
+-                    {
+-                        'role': 'user',
+-                        'content': feed_back
+-                    }
+-                )
+-
+-                history_turns.append(
+-                    turn_items
+-                )
+-
+-                continue
+-
+-            if report.complete == CompletionStatus.BLOCKED:
+-                allow_blocked_final = True
+-                feed_back = build_completion_feedback(
+-                    report=report,
+-                    state=state
+-                )
+-                
+-                turn_items.append(
+-                    {
+-                        'role': 'user',
+-                        'content': feed_back
+-                    }
+-                )
+-
+-                history_turns.append(
+-                    turn_items
+-                )
+-
+-                continue
+-
+-            # completion_status = get_completion_status(
+-            #     state
+-            # )
+-
+-            # if completion_status == CompletionStatus.COMPLETE:
+-            #     metrics.end_runing()
+-            #     trace.print_trace()
+-            #     return message.content or ""
+-
+-            # if (
+-            #     completion_status == CompletionStatus.BLOCKED
+-            #     and allow_blocked_final == True
+-            # ):
+-            #     metrics.end_runing()
+-            #     trace.print_trace()
+-            #     return message.content or ""
+-
+-
+-            # if completion_status == CompletionStatus.INCOMPLETE:
+-            #     # unfinished = get_unfinished_tasks(state)
+-
+-            #     # unfinished_text = "\n".join(
+-            #     #     f"- {todo.id}. {todo.content}"
+-            #     #     for todo in unfinished
+-            #     # )
+-
+-            #     runtime_feedback = {
+-            #         "role": "user",
+-            #         "content": (
+-            #             "RUNTIME GUARD: no plan exists yet. "
+-            #             "Create a concise todo plan with set_plan before finishing."
+-            #         ),
+-            #     }
+-
+-            #     turn_items.append(runtime_feedback)
+-            #     history_turns.append(
+-            #         turn_items
+-            #     )
+-
+-            #     continue
+-
+-            # if completion_status == CompletionStatus.BLOCKED:
+-            #     allow_blocked_final = True
+-            #     runtime_feedback = {
+-            #         "role": "user",
+-            #         "content": (
+-            #             "Some tasks are blocked.\n\n"
+-            #             f"{format_plan(state)}\n\n"
+-            #             "Provide a final answer "
+-            #             "explaining completed work "
+-            #             "and blocked tasks."
+-            #         ),
+-            #     }
+-            #     turn_items.append(
+-            #         runtime_feedback
+-            #     )
+-
+-            #     history_turns.append(
+-            #         turn_items
+-            #     )
+-
+-            #     continue
++
++            metrics.completion_rejections += 1
++            history_turns.append(turn_items + [{
++                "role": "user",
++                "content": build_completion_feedback(decision.report, state),
++            }])
++            continue
+ 
+         # -------------------------
+         # 5. 执行 Tool Calls
+@@ -413,16 +324,6 @@
+                             current_turn=metrics.model_turns,
+                         )
+ 
+-                if result.success:
+-                    # 推进了任务
+-                    if tool_caused_progress(
+-                        name=name,
+-                        result=result
+-                    ):
+-                        record_progress(
+-                            state=state,
+-                            turn=metrics.model_turns
+-                        )
+                 tool_output = {
+                     "role": "tool",
+                     "tool_call_id": call.id,
+@@ -453,3 +354,23 @@
+         history_turns.append(
+             turn_items
+         )
++
++        # 一批工具全部执行、Tool Response 都保存以后，再统一检查。
++        # 由实际状态和有效证据判断进展，set_plan/replan 本身不自动算进展。
++        decision = check_lifecycle(state, metrics.model_turns, progress, budget)
++        new_milestones = progress.observe(
++            state, decision.report, metrics.model_turns
++        )
++        if new_milestones:
++            trace.record(
++                turn=metrics.model_turns,
++                event_type="meaningful_progress",
++                name="milestone",
++                detail=", ".join(sorted(new_milestones))[:400],
++            )
++        decision = check_lifecycle(state, metrics.model_turns, progress, budget)
++        metrics.completion_checks += 1
++        if decision.action != LifecycleAction.CONTINUE:
++            return finish_agent(
++                state=state, metrics=metrics, trace=trace, decision=decision
++            )
+--- a/src/mini_coding_agent/agent_metrics.py
++++ b/src/mini_coding_agent/agent_metrics.py
+@@ -3,6 +3,10 @@
+ 
+ @dataclass
+ class AgentMetrics:
++    # 第24课：Runtime 最终结果（与 CompletionStatus 分开）
++    run_outcome: str | None = None
++    stop_reason: str | None = None
++
+     # 运行次数
+     model_turns: int = 0
+     # 方法调用次数
+@@ -176,6 +180,8 @@
+             f"{self.repeated_failures}"
+         )
+ 
++        print(f"Run outcome: {self.run_outcome}")
++        print(f"Stop reason: {self.stop_reason}")
+         print("=============================\n")
+ 
+ 
+--- /dev/null
++++ b/src/mini_coding_agent/runtime_lifecycle.py
+@@ -0,0 +1,161 @@
++"""第24课：Runtime 统一完成、预算、停滞与终止决策。"""
++
++from __future__ import annotations
++
++from dataclasses import dataclass, field
++from enum import Enum
++
++from .evidence import has_valid_evidence
++from .planning import AgentState, TaskStatus
++from .task_completion import CompletionReport, CompletionStatus, evaluate_completion
++
++
++class LifecycleAction(str, Enum):
++    CONTINUE = "continue"
++    FINALIZE = "finalize"
++    TERMINATE = "terminate"
++
++
++class RunOutcome(str, Enum):
++    COMPLETE = "complete"
++    BLOCKED = "blocked"
++    STOPPED = "stopped"
++
++
++class StopReason(str, Enum):
++    UNRECOVERABLE_BLOCKER = "unrecoverable_blocker"
++    NO_PROGRESS = "no_progress"
++    MAX_MODEL_TURNS = "max_model_turns"
++    MODEL_ERROR = "model_error"
++
++
++@dataclass(frozen=True)
++class RuntimeBudget:
++    max_model_turns: int = 120
++    max_no_progress_turns: int = 30
++    warn_no_progress_turns: int = 12
++
++    def __post_init__(self) -> None:
++        if not (0 < self.warn_no_progress_turns < self.max_no_progress_turns):
++            raise ValueError("warn threshold must be below stop threshold")
++        if self.max_model_turns <= 0:
++            raise ValueError("max_model_turns must be positive")
++
++
++@dataclass(frozen=True)
++class LifecycleDecision:
++    action: LifecycleAction
++    report: CompletionReport
++    outcome: RunOutcome | None = None
++    reason: StopReason | None = None
++
++
++@dataclass
++class ProgressTracker:
++    """只记录首次获得的里程碑，不把重试、重复读取、Replan 直接当进展。"""
++
++    last_meaningful_turn: int = 0
++    seen_milestones: set[str] = field(default_factory=set)
++    last_warning_progress_turn: int | None = None
++
++    def observe(
++        self,
++        state: AgentState,
++        report: CompletionReport,
++        turn: int,
++    ) -> set[str]:
++        milestones: set[str] = set()
++
++        if state.goal.locked:
++            milestones.add("goal_locked")
++        if state.requirements.locked:
++            milestones.add("requirements_locked")
++        if state.plan.items:
++            milestones.add("plan_created")
++        if state.changed_files:
++            milestones.add("first_workspace_change")
++
++        for todo in state.plan.items:
++            if todo.status != TaskStatus.COMPLETED:
++                continue
++            if todo.required_evidence is not None and not has_valid_evidence(
++                state, todo.required_evidence
++            ):
++                continue
++            # 使用任务定义而非 Plan Revision：Replan 重用旧任务不会重计进展。
++            identity = (
++                todo.content.strip().casefold(),
++                todo.kind.value,
++                tuple(sorted(todo.requirement_ids)),
++            )
++            milestones.add(f"completed_task:{identity!r}")
++
++        for requirement in report.requirements:
++            if requirement.satisfied and requirement.name.startswith("user_requirement_"):
++                milestones.add(requirement.name)
++
++        # 相同代码版本重复运行 pytest，不算新里程碑。
++        if any(r.name == "code_verified" and r.satisfied for r in report.requirements):
++            milestones.add(f"code_verified:{state.code_revision}")
++        if any(r.name == "diff_verified" and r.satisfied for r in report.requirements):
++            milestones.add(f"diff_verified:{state.workspace_revision}")
++
++        new_milestones = milestones - self.seen_milestones
++        self.seen_milestones.update(milestones)
++        if new_milestones:
++            self.last_meaningful_turn = turn
++            self.last_warning_progress_turn = None
++            # 兼容旧的进展显示；生命周期只读 Tracker，不读旧工具计数。
++            state.last_progress_turn = turn
++            state.stagnation_warnings = 0
++        return new_milestones
++
++    def should_warn(self, turn: int, budget: RuntimeBudget) -> bool:
++        if turn - self.last_meaningful_turn < budget.warn_no_progress_turns:
++            return False
++        if self.last_warning_progress_turn == self.last_meaningful_turn:
++            return False
++        self.last_warning_progress_turn = self.last_meaningful_turn
++        return True
++
++
++def check_lifecycle(
++    state: AgentState,
++    model_turns: int,
++    progress: ProgressTracker,
++    budget: RuntimeBudget,
++    *,
++    unrecoverable_blocker: bool = False,
++) -> LifecycleDecision:
++    """每次模型请求之前、整批工具调用之后使用同一个决策函数。"""
++
++    report = evaluate_completion(state)
++    if report.complete == CompletionStatus.COMPLETE:
++        return LifecycleDecision(LifecycleAction.FINALIZE, report, RunOutcome.COMPLETE)
++
++    # 只有 Runtime 获得可靠的不可恢复依据才能传 True。
++    if unrecoverable_blocker:
++        return LifecycleDecision(
++            LifecycleAction.TERMINATE,
++            report,
++            RunOutcome.BLOCKED,
++            StopReason.UNRECOVERABLE_BLOCKER,
++        )
++
++    if model_turns >= budget.max_model_turns:
++        return LifecycleDecision(
++            LifecycleAction.TERMINATE,
++            report,
++            RunOutcome.STOPPED,
++            StopReason.MAX_MODEL_TURNS,
++        )
++
++    if model_turns - progress.last_meaningful_turn >= budget.max_no_progress_turns:
++        return LifecycleDecision(
++            LifecycleAction.TERMINATE,
++            report,
++            RunOutcome.STOPPED,
++            StopReason.NO_PROGRESS,
++        )
++
++    return LifecycleDecision(LifecycleAction.CONTINUE, report)
+--- /dev/null
++++ b/tests/test_runtime_lifecycle.py
+@@ -0,0 +1,164 @@
++"""第24课：不调用真实 LLM 的生命周期回归测试。"""
++
++from types import SimpleNamespace
++
++from mini_coding_agent import agent
++from mini_coding_agent.planning import create_agent_state, TodoItem, TaskStatus
++from mini_coding_agent.agent_metrics import AgentMetrics
++from mini_coding_agent.evidence import EvidenceType
++from mini_coding_agent.runtime_lifecycle import (
++    LifecycleAction, ProgressTracker, RunOutcome,
++    RuntimeBudget, StopReason, check_lifecycle,
++)
++from mini_coding_agent.task_completion import evaluate_completion
++from mini_coding_agent.verification import VerificationKind, VerificationRecord
++from mini_coding_agent.planning import update_task
++
++
++def completed_state():
++    state = create_agent_state("done")
++    state.goal.locked = True
++    state.requirements.locked = True
++    state.plan.revision = 1
++    state.plan.items = [TodoItem(id=1, content="implement", status=TaskStatus.COMPLETED)]
++    return state
++
++
++def test_complete_has_priority_over_budget():
++    state = completed_state()
++    decision = check_lifecycle(state, 120, ProgressTracker(), RuntimeBudget())
++    assert decision.action == LifecycleAction.FINALIZE
++    assert decision.outcome == RunOutcome.COMPLETE
++
++
++def test_no_progress_ends_in_stop_not_success():
++    state = create_agent_state("incomplete")
++    decision = check_lifecycle(
++        state, 41, ProgressTracker(last_meaningful_turn=10),
++        RuntimeBudget(max_model_turns=120, max_no_progress_turns=30),
++    )
++    assert decision.action == LifecycleAction.TERMINATE
++    assert decision.outcome == RunOutcome.STOPPED
++    assert decision.reason == StopReason.NO_PROGRESS
++
++
++def test_model_budget_ends_in_stop():
++    decision = check_lifecycle(
++        create_agent_state("incomplete"),
++        120, ProgressTracker(last_meaningful_turn=119), RuntimeBudget(),
++    )
++    assert decision.reason == StopReason.MAX_MODEL_TURNS
++
++
++def test_runtime_confirmed_unrecoverable_blocker():
++    decision = check_lifecycle(
++        create_agent_state("blocked"), 5, ProgressTracker(),
++        RuntimeBudget(), unrecoverable_blocker=True,
++    )
++    assert decision.outcome == RunOutcome.BLOCKED
++    assert decision.reason == StopReason.UNRECOVERABLE_BLOCKER
++
++
++def test_replan_alone_does_not_reset_progress():
++    state = create_agent_state("refactor")
++    state.plan.revision = 1
++    state.plan.items = [TodoItem(id=1, content="refactor", status=TaskStatus.IN_PROGRESS)]
++    tracker = ProgressTracker()
++    tracker.observe(state, evaluate_completion(state), 5)
++    assert tracker.last_meaningful_turn == 5
++
++    # 仅更新 plan revision 和 Todo 的编号、原任务含义不变。
++    state.plan.revision += 1
++    state.plan.items = [TodoItem(id=4, content="refactor", status=TaskStatus.IN_PROGRESS)]
++    assert tracker.observe(state, evaluate_completion(state), 9) == set()
++    assert tracker.last_meaningful_turn == 5
++
++
++def test_repeat_tests_same_code_revision_are_not_new_progress():
++    state = create_agent_state("fix")
++    state.requirements.locked = True
++    state.changed_files.add("a.py")
++    state.workspace_revision = 1
++    state.code_revision = 1
++    state.plan.items = [TodoItem(id=1, content="fix", status=TaskStatus.PENDING)]
++    state.verification.records.append(VerificationRecord(
++        VerificationKind.TEST, True, 1, 1, "pytest", "pass"
++    ))
++    tracker = ProgressTracker()
++    tracker.observe(state, evaluate_completion(state), 5)
++    state.verification.records.append(VerificationRecord(
++        VerificationKind.TEST, True, 1, 1, "pytest", "pass again"
++    ))
++    assert tracker.observe(state, evaluate_completion(state), 10) == set()
++    assert tracker.last_meaningful_turn == 5
++
++
++def test_stale_verification_prevents_completion():
++    state = completed_state()
++    state.changed_files.add("x.py")
++    state.code_revision = 2
++    state.workspace_revision = 2
++    state.verification.records.extend([
++        VerificationRecord(VerificationKind.TEST, True, 1, 1, "pytest", "pass"),
++        VerificationRecord(VerificationKind.DIFF, True, 1, 1, "git diff", "ok"),
++    ])
++    assert check_lifecycle(state, 2, ProgressTracker(), RuntimeBudget()).action == LifecycleAction.CONTINUE
++
++
++def _fake_assistant(tool_calls=(), content=""):
++    return SimpleNamespace(
++        content=content,
++        tool_calls=list(tool_calls),
++        model_dump=lambda **_: {"role": "assistant", "content": content},
++    )
++
++
++def test_agent_stops_right_after_completed_tool_batch(monkeypatch):
++    state = create_agent_state("task")
++    state.goal.locked = True
++    state.requirements.locked = True
++    state.plan.revision = 1
++    state.plan.items = [TodoItem(id=1, content="do refactor", status=TaskStatus.IN_PROGRESS)]
++    monkeypatch.setattr(agent, "create_agent_state", lambda user_prompt: state)
++    monkeypatch.setattr(agent, "compress_history", lambda **kwargs: None)
++    monkeypatch.setattr(agent, "print_context_debug", lambda **kwargs: None)
++    monkeypatch.setattr(agent, "print_fixed_context_breakdown", lambda **kwargs: None)
++    monkeypatch.setattr(agent, "print_state_debug", lambda *args: None)
++    monkeypatch.setattr(agent, "guard_tool_call", lambda **kwargs: None)
++    monkeypatch.setattr(agent, "guard_recent_tool_call", lambda **kwargs: None)
++
++    called = []
++    tc = SimpleNamespace(
++        id="call-one", function=SimpleNamespace(
++            name="update_task", arguments='{"task_id": 1, "status": "completed"}'
++        )
++    )
++    def fake_model(*args, **kwargs):
++        called.append(1)
++        return _fake_assistant([tc])
++    monkeypatch.setattr(agent, "call_model", fake_model)
++
++    def fake_tool(*, name, arguments, state, metrics, **kwargs):
++        return update_task(state=state, metrics=metrics, **arguments)
++    monkeypatch.setattr(agent, "execute_tool_with_recovery", fake_tool)
++    result = agent.run_agent("task")
++    assert result.startswith("Outcome: complete")
++    assert len(called) == 1
++
++
++def test_agent_stops_no_tool_loop_when_budget_exceeded(monkeypatch):
++    monkeypatch.setattr(agent, "compress_history", lambda **kwargs: None)
++    monkeypatch.setattr(agent, "print_context_debug", lambda **kwargs: None)
++    monkeypatch.setattr(agent, "print_fixed_context_breakdown", lambda **kwargs: None)
++    monkeypatch.setattr(agent, "print_state_debug", lambda *args: None)
++    orig = agent.RuntimeBudget
++    monkeypatch.setattr(agent, "RuntimeBudget", lambda **kwargs: orig(120, 3, 1))
++    calls = []
++    def fake_model(*args, **kwargs):
++        calls.append(1)
++        return _fake_assistant(content="I am done")
++    monkeypatch.setattr(agent, "call_model", fake_model)
++    result = agent.run_agent("task")
++    assert "Outcome: stopped" in result
++    assert "no_progress" in result
++    assert len(calls) == 3

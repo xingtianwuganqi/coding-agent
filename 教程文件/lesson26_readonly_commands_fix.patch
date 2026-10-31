@@ -1,0 +1,124 @@
+--- a/src/mini_coding_agent/approval.py
++++ b/src/mini_coding_agent/approval.py
+@@ -7,6 +7,8 @@
+ 
+ import hashlib
+ import json
++import shlex
++from pathlib import PurePath
+ from dataclasses import dataclass
+ from enum import Enum
+ from typing import Callable
+@@ -34,28 +36,96 @@
+         return self.status in {ApprovalStatus.ALLOWED, ApprovalStatus.APPROVED}
+ 
+ 
+-# Intentionally tiny allowlist of command forms in *trusted* workspaces.
+-# A test runner or arbitrary git option can execute code / have side effects.
+-READ_ONLY_COMMAND_FORMS = {"pwd", "ls", "ls -la", "git status", "git diff"}
++# Limited, parsed forms that can be run without a confirmation prompt.
++# This is a convenience policy for a trusted local workspace, not a sandbox.
++_GIT_DIFF_OPTIONS = {
++    "--stat", "--name-only", "--name-status", "--cached", "--staged",
++    "--check", "--no-ext-diff", "--no-textconv", "--color=never",
++}
++_GIT_STATUS_OPTIONS = {
++    "--short", "-s", "--branch", "-b", "-sb", "-bs",
++    "--porcelain", "--porcelain=v1", "--porcelain=v2",
++    "--untracked-files=all", "--untracked-files=normal",
++}
++
++
++def _local_operand(token: str) -> bool:
++    """Keep automatic approval to simple relative paths (not a path sandbox)."""
++    path = PurePath(token)
++    return bool(token) and not path.is_absolute() and ".." not in path.parts and not token.startswith("~")
++
++
++def _git_readonly_args(args: list[str], allowed_options: set[str]) -> bool:
++    paths_only = False
++    for item in args:
++        if not paths_only and item == "--":
++            paths_only = True
++        elif not paths_only and item.startswith("-"):
++            if item not in allowed_options:
++                return False
++        elif not _local_operand(item):
++            return False
++    return True
++
++
++def is_auto_approved_readonly_command(command: str) -> bool:
++    """Approve simple read-only command *forms*, not exact command strings.
++
++    Command syntax / prohibited shell constructs are checked separately by
++    permission.classify_command(), and subprocess.run uses shell=False.
++    """
++    try:
++        args = shlex.split(command)
++    except ValueError:
++        return False
++
++    if args == ["pwd"]:
++        return True
++
++    if not args:
++        return False
++
++    if args[0] == "ls":
++        # ls cannot modify files, but avoid auto-approving explicit outside paths.
++        paths_only = False
++        for item in args[1:]:
++            if not paths_only and item == "--":
++                paths_only = True
++            elif not paths_only and item.startswith("-"):
++                continue
++            elif not _local_operand(item):
++                return False
++        return True
++
++    if args[:2] == ["git", "status"]:
++        return _git_readonly_args(args[2:], _GIT_STATUS_OPTIONS)
++
++    if args[:2] == ["git", "diff"]:
++        return _git_readonly_args(args[2:], _GIT_DIFF_OPTIONS)
++
++    return False
+ 
+ 
+ def policy_for_tool(name: str, arguments: dict) -> Permission:
+     policy = TOOL_PERMISSIONS.get(name, Permission.BLOCKED)
+     if policy == Permission.BLOCKED:
+         return policy
+-    if name == "run_command":
+-        command = arguments.get("command")
+-        if not isinstance(command, str):
+-            return Permission.BLOCKED
+-        original = classify_command(command)
+-        if original == Permission.BLOCKED:
+-            return Permission.BLOCKED
+-        # A command that was classified SAFE at the legacy layer might
+-        # still run project code, write a file, or have unexpected flags.
+-        if original == Permission.SAFE and command.strip() not in READ_ONLY_COMMAND_FORMS:
+-            return Permission.CONFIRM
+-        return original
+-    return policy
++
++    if name != "run_command":
++        return policy
++
++    command = arguments.get("command")
++    if not isinstance(command, str):
++        return Permission.BLOCKED
++
++    original = classify_command(command)
++    if original != Permission.SAFE:
++        return original  # CONFIRM or BLOCKED
++
++    if is_auto_approved_readonly_command(command):
++        return Permission.SAFE
++
++    return Permission.CONFIRM
+ 
+ 
+ def approval_signature(name: str, arguments: dict) -> str:

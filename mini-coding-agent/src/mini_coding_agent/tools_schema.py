@@ -24,6 +24,30 @@ TOOLS = [
     },
     {
         "type": "function",
+        "function": {
+            "name": "delete_file",
+            "description": (
+                "Delete a file inside the workspace. "
+                "Use this to remove temporary files "
+                "or files that are no longer needed."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": (
+                            "File path relative to the workspace."
+                        ),  
+                    }
+                },
+                "required": ["path"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
         "name": "list_files",
         "description": "List files and directories inside a directory in the workspace.",
         "parameters": {
@@ -206,6 +230,17 @@ TOOLS = [
                                     "tests_passed",
                                     "diff_inspected",
                                 ],
+                            },
+                            "depends_on": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer",
+                                },
+                                "uniqueItems": True,
+                                "description": (
+                                    "IDs of prerequisite tasks that must "
+                                    "be completed before this task starts."
+                                ),
                             }
                         },
                         "required": [
@@ -213,6 +248,7 @@ TOOLS = [
                             "kind",
                             "requirement_ids",
                             "required_evidence",
+                            "depends_on"
                         ],
                         "additionalProperties": False,
                     },
@@ -292,6 +328,47 @@ TOOLS = [
             },
             "required": [
                 "query",
+            ],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "type": "function",
+        "name": "ask_user",
+        "description": (
+            "Ask the user a question when a decision or a piece of "
+            "information is missing and cannot be resolved from the "
+            "workspace. Provide 2 to 6 concrete options. Options are "
+            "shown to the user as 1, 2, 3, ...; the user replies with "
+            "the number of the chosen option. The user may reply 0 to "
+            "mean that none of the options apply or that they have no "
+            "answer."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "question": {
+                    "type": "string",
+                    "description": (
+                        "The single question to ask the user."
+                    ),
+                },
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                    },
+                    "minItems": 2,
+                    "maxItems": 6,
+                    "description": (
+                        "Candidate answers. Each option is shown "
+                        "with a number starting at 1."
+                    ),
+                },
+            },
+            "required": [
+                "question",
+                "options",
             ],
             "additionalProperties": False,
         },
@@ -420,13 +497,38 @@ TOOLS = [
                                         "tests_passed",
                                         "diff_inspected",
                                     ],
-                                }
+                                },
+                                "depends_on": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                    },
+                                    "description": (
+                                        "IDs of prerequisite tasks in the NEW plan. "
+                                        "A task can start only after all these tasks "
+                                        "are completed. Use [] if there are no dependencies. "
+                                        "IDs refer to the new plan, not the previous plan."
+                                    ),
+                                },
+                                "reuse_from_task_id": {
+                                    "type": ["integer", "null"],
+                                    "description": (
+                                        "ID of a COMPLETED task in the PREVIOUS plan "
+                                        "whose work this new task proposes to reuse. "
+                                        "Use null for new or changed tasks. "
+                                        "The runtime validates reuse before preserving "
+                                        "the completed status."
+                                    ),
+                                },
                             },
                             "required": [
                                 "content",
                                 "kind",
                                 "requirement_ids",
                                 "required_evidence",
+                                "depends_on",
+                                "reuse_from_task_id",
                             ],
                             "additionalProperties": False,
                         },

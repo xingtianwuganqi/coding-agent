@@ -9,14 +9,17 @@ from .permission import (
     TOOL_PERMISSIONS,
     ask_for_confirmation,
 )
-from .planing import (
+
+from .approval import authorize_tool_call, policy_for_tool
+
+from .planning import (
     AgentState,
     set_plan,
     get_plan,
     update_task,
-    record_progress,
+    # record_progress,
     ReplanReason,
-    replan
+    replan,
 )
 from .evidence import (
     CommandResult,
@@ -28,9 +31,12 @@ from .tools import (
     list_files,
     read_file,
     search_text,
+    ask_user,
+    ask_user_choice,
     write_file,
     replace_text,
     run_command,
+    delete_file,
 )
 
 from .agent_metrics import (
@@ -80,12 +86,35 @@ def record_workspace_change(
     if is_code_file(path):
         state.code_revision += 1
 
+def format_confirmation_detail(
+        name: str,
+        arguments: dict,
+) -> str:
+    '''
+    构造 y/N 确认时展示给用户的详细信息。
+
+    delete_file 必须显示目标文件路径，否则用户无法判断是否放行。
+    '''
+    if name == "delete_file":
+        return (
+            "Target file: "
+            f"{arguments.get('path', '<unknown>')}"
+        )
+
+    return (
+        "Arguments: "
+        + json.dumps(arguments, ensure_ascii=False)
+    )
+
+
 def execute_tool(
         name: str,
         arguments: dict,
         state: AgentState,
         metrics: AgentMetrics,
         trace: AgentTrace,
+        *,
+        preauthorized: bool = False, # 预授权的
 ) -> ToolResult:
     '''
     真正的调用工具
@@ -98,21 +127,45 @@ def execute_tool(
                 error=f"Unknown tool: {name}"
             )
 
-        # 调用工具前对权限进行询问
-        permission = TOOL_PERMISSIONS[name]
-
-        if permission == Permission.BLOCKED:
-            return ToolResult(
-                success=False,
-                error=f"Tool is blocked: {name}"
-            )
-        
-        if permission == Permission.CONFIRM:
-            if not ask_for_confirmation(name):
-                return ToolResult(
-                    success=False,
-                    error="User denied the tool call."
+        if preauthorized:
+            if policy_for_tool(name, arguments) == Permission.BLOCKED:
+                return ToolResult.fail(
+                    error=f"POLICY_BLOCKED: {name}",
+                    failure_code="POLICY_BLOCKED",
                 )
+        else:
+            authorization = authorize_tool_call(name, arguments)
+            if not authorization.allowed:
+                code = (
+                    "USER_DENIED" if authorization.status.value == "denied"
+                    else "POLICY_BLOCKED"
+                )
+                return ToolResult.fail(
+                    error=authorization.reason,
+                    failure_code=code
+                )
+
+        # 调用工具前对权限进行询问
+        # permission = TOOL_PERMISSIONS[name]
+
+        # if permission == Permission.BLOCKED:
+        #     return ToolResult(
+        #         success=False,
+        #         error=f"Tool is blocked: {name}"
+        #     )
+        
+        # if permission == Permission.CONFIRM:
+        #     if not ask_for_confirmation(
+        #         name,
+        #         detail=format_confirmation_detail(
+        #             name=name,
+        #             arguments=arguments,
+        #         ),
+        #     ):
+        #         return ToolResult(
+        #             success=False,
+        #             error="User denied the tool call."
+        #         )
 
         if name == "set_goal":
             return set_goal(
@@ -135,20 +188,16 @@ def execute_tool(
 
             result = write_file(**arguments)
             if result.changed:
-                record_progress(
-                    state=state,
-                    turn=metrics.model_turns
-                )
                 # mark_workspace_changed(state)
                 record_workspace_change(
                     state=state,
                     path=arguments["path"]
                 )
 
-                record_progress(
-                    state=state,
-                    turn=metrics.model_turns
-                )
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
 
                 return ToolResult(
                     success=True,
@@ -171,19 +220,15 @@ def execute_tool(
                 
             result = replace_text(**arguments)
             if result.changed:
-                record_progress(
-                    state=state,
-                    turn=metrics.model_turns
-                )
                 # mark_workspace_changed(state)
                 record_workspace_change(
                     state=state,
                     path=arguments["path"]
                 )
-                record_progress(
-                    state=state,
-                    turn=metrics.model_turns
-                )
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
                 return ToolResult(
                     success=True,
                     content=json.dumps(asdict(result)),
@@ -255,10 +300,10 @@ def execute_tool(
             )
 
             if result.success:
-                record_progress(
-                    state=state,
-                    turn=metrics.model_turns
-                )
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
                 if metrics.plan_created_turn is None:
                     metrics.plan_created_turn = (
                         metrics.model_turns
@@ -283,10 +328,41 @@ def execute_tool(
                 **arguments
             )
 
+        if name == "ask_user":
+            return ask_user(
+                **arguments
+            )
+
         if name == "set_requirements":
+            def resolve_target_with_user(
+                    target: str,
+                    matches: list[str],
+            ) -> str | None:
+                selected = ask_user_choice(
+                    question=(
+                        f"Multiple files match the requirement "
+                        f"target '{target}'. Which file should "
+                        "be changed?"
+                    ),
+                    options=matches,
+                )
+
+                trace.record(
+                    turn=metrics.model_turns,
+                    event_type="requirement_target_choice",
+                    name="set_requirements",
+                    detail=(
+                        f"target={target}; "
+                        f"selected={selected}"
+                    ),
+                )
+
+                return selected
+
             result = set_requirements(
                 state=state,
-                **arguments
+                **arguments,
+                resolver=resolve_target_with_user,
             )
 
             if metrics.requirements_created_turn is None:
@@ -300,6 +376,11 @@ def execute_tool(
                         f"{len(state.requirements.items)}"
                     )
                 )
+
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
 
             return result
 
@@ -347,7 +428,37 @@ def execute_tool(
                     )
                 )
 
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
+
             return  result
+
+        if name == "delete_file":
+            result = delete_file(**arguments)
+            if not result.success:
+                return ToolResult(
+                    success=False,
+                    error=result.message,
+                )
+
+            if result.changed:
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
+                # mark_workspace_changed(state)
+                record_workspace_change(
+                    state=state,
+                    path=arguments["path"]
+                )
+
+            return ToolResult(
+                success=True,
+                content=result.message,
+            )
+
 
         return ToolResult(
             success=False,
@@ -376,6 +487,8 @@ def execute_tool_with_recovery(
     metrics,
     trace,
     current_turn: int,
+    *,
+    preauthorized: bool = False, # 预授权
 ) -> ToolResult:
 
     '''
@@ -399,6 +512,20 @@ def execute_tool_with_recovery(
     注意：最多只会自动重试一次，不会无限重试。
     '''
 
+    # Permission denial is a policy outcome, not a tool execution or a
+    # recoverable failure. Authorize once when this API is called directly.
+    if not preauthorized:
+        authorization = authorize_tool_call(name=name, arguments=arguments)
+        if not authorization.allowed:
+            return ToolResult.fail(
+                error=authorization.reason,
+                failure_code=(
+                    "USER_DENIED" if authorization.status.value == "denied"
+                    else "POLICY_BLOCKED"
+                )
+            )
+        preauthorized = True
+
     # =========================
     # 第一次执行
     # =========================
@@ -410,7 +537,8 @@ def execute_tool_with_recovery(
         arguments=arguments,
         state=state,
         metrics=metrics,
-        trace=trace
+        trace=trace,
+        preauthorized=preauthorized
     )
 
     # =========================
@@ -425,6 +553,12 @@ def execute_tool_with_recovery(
 
         return result
 
+    # Explicit denial / policy blocking is NOT an execution failure;
+    # never put it through the generic retry or failure-streak mechanism.
+    # 用户拒绝不算工具运行失败，不应该消耗自动重试次数，也不应该靠自动重试重新申请同一个权限。
+    if result.failure_code in {"USER_DENIED", "POLICY_BLOCKED"}:
+        return result
+    
     # =========================
     # 第一次失败
     # =========================

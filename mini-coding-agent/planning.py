@@ -9,8 +9,8 @@ planning.py（工作区根目录入口）
 已整理到 mini_coding_agent 包内的同级模块中（task_state、runtime_context、
 stagnation、requirements 等）。
 
-实际实现位于 :mod:`mini_coding_agent.planing`，经由
-:mod:`mini_coding_agent.planning` 转发。该模块中的全部 ``validate_*``
+实际实现位于 :mod:`mini_coding_agent.planning`（旧拼写变体模块的
+实现已完整合并到该模块并被移除）。该模块中的全部 ``validate_*``
 计划校验方法均带有完整中文注释（用途、校验逻辑、Args 与 Returns）。
 
 本文件仅做转发，不改变任何行为。

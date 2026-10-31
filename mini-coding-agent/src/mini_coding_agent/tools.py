@@ -5,6 +5,12 @@ import subprocess
 from pathlib import Path
 from .tool_result import ToolResult
 
+# 说明：is_code_file（定义于 verification.py，用于按扩展名判断文件是否为代码文件）
+# 在本模块的文件写入类工具（write_file / replace_text）的调用链中被使用：
+# tool_runner 会先通过 is_code_file(path) 判断目标路径是否为代码文件，
+# 再决定是否触发相应的代码验证流程。此处仅添加注释说明该关联，
+# 本模块自身不直接定义或导入 is_code_file。
+
 from .config import (
     WORKSPACE,
     DEFAULT_READ_LINES,
@@ -27,17 +33,30 @@ from .agent_metrics import (
     is_test_command
 )
 
-from .planing import (
+from .planning import (
     AgentState,
-    record_progress
+    # record_progress
 )
+
+PROTECTED_COMPONENTS = {".env", ".git", ".venv", ".mini_agent"}
 
 
 def resolve_path(path: str) -> Path:
-    target = (WORKSPACE / path).resolve()
+    """Keep file tools inside the workspace and away from private internals.
 
-    if target != WORKSPACE and WORKSPACE not in target.parents:
+    This does not sandbox `run_command`, which requires a separate OS-level
+    security boundary if project content is untrusted.
+    """
+    root = WORKSPACE.resolve()
+    target = (root / path).resolve()
+
+    if target != root and root not in target.parents:
         raise ValueError("Path is outside the workspace")
+
+    relative = target.relative_to(root)
+    # 增加一层敏感文件保护
+    if any(part in PROTECTED_COMPONENTS for part in relative.parts):
+        raise ValueError("Protected workspace path is not accessible")
 
     return target
 
@@ -286,6 +305,161 @@ def search_text(
     
 
 
+MAX_ASK_USER_ATTEMPTS = 3
+
+
+def clean_ask_user_options(
+        options: list[str],
+) -> list[str]:
+    """Normalize option strings and drop empty entries."""
+    return [
+        str(option).strip()
+        for option in options
+        if str(option).strip()
+    ]
+
+
+def prompt_user_choice(
+        question: str,
+        options: list[str],
+) -> tuple[str | None, str]:
+    """Render a numbered question and read one answer.
+
+    Returns ``(selected_option, status)`` where status is one of:
+
+    - ``"selected"``: ``selected_option`` is the chosen option text;
+    - ``"zero"``: the user answered 0 / pressed Enter;
+    - ``"closed"``: input was closed (EOF / Ctrl-C);
+    - ``"exhausted"``: too many invalid answers.
+    """
+    print("\n🤔 Agent asks:")
+    print(question)
+    print()
+
+    for index, option in enumerate(options, start=1):
+        print(f"  {index}. {option}")
+
+    print("  0. None of the above / no answer")
+
+    for _ in range(MAX_ASK_USER_ATTEMPTS):
+        try:
+            answer = input(
+                f"\nYour answer [0-{len(options)}]: "
+            ).strip()
+        except (EOFError, KeyboardInterrupt):
+            return None, "closed"
+
+        # 直接回车视为“没有答案”
+        if answer == "":
+            answer = "0"
+
+        if answer == "0":
+            return None, "zero"
+
+        if answer.isdigit():
+            choice = int(answer)
+
+            if 1 <= choice <= len(options):
+                return options[choice - 1], "selected"
+
+        print(
+            "Invalid answer. Enter a number between "
+            f"0 and {len(options)}."
+        )
+
+    return None, "exhausted"
+
+
+def ask_user_choice(
+        question: str,
+        options: list[str],
+) -> str | None:
+    """Interactively pick one option and return its text.
+
+    Returns ``None`` when the user answers 0, input is closed, or no
+    valid answer is given. This helper is also used by internal
+    runtime flows that need to disambiguate a choice without going
+    through a model tool call.
+    """
+    cleaned_options = clean_ask_user_options(options)
+
+    if not cleaned_options:
+        return None
+
+    selected, _ = prompt_user_choice(
+        question=question,
+        options=cleaned_options,
+    )
+
+    return selected
+
+
+def ask_user(
+        question: str,
+        options: list[str],
+) -> ToolResult:
+    """Ask the user to choose one of the given options.
+
+    Options are presented with 1-based numbers. The user may answer 0
+    to indicate that none of the options apply or that they have no
+    answer. The response is returned to the model as tool content.
+    """
+    cleaned_options = clean_ask_user_options(options)
+
+    if not cleaned_options:
+        return ToolResult(
+            success=False,
+            error=(
+                "ask_user requires at least one "
+                "non-empty option."
+            )
+        )
+
+    selected, status = prompt_user_choice(
+        question=question,
+        options=cleaned_options,
+    )
+
+    if status == "selected":
+        choice = cleaned_options.index(selected) + 1
+
+        return ToolResult.ok(
+            content=(
+                f"User selected option {choice}: "
+                f"{selected}"
+            )
+        )
+
+    if status == "closed":
+        return ToolResult.ok(
+            content=(
+                "User did not answer "
+                "(input was closed). "
+                "Treat this as answer 0 and proceed "
+                "using your best judgment."
+            )
+        )
+
+    if status == "exhausted":
+        return ToolResult.ok(
+            content=(
+                "User did not give a valid answer after "
+                f"{MAX_ASK_USER_ATTEMPTS} attempts. "
+                "Treat this as answer 0 (no option selected). "
+                "Proceed using your best judgment or mark "
+                "the work as blocked with a reason."
+            )
+        )
+
+    return ToolResult.ok(
+        content=(
+            "User selected 0: none of the options apply. "
+            "The user has no answer or asked you to "
+            "proceed without choosing an option."
+        )
+    )
+
+
 def write_file(path: str, content: str) -> FileOperationResult:
     target = resolve_path(path)
 
@@ -426,15 +600,15 @@ def run_command(
         )
 
 
-        if (
-            is_test_command(
-                command
-            ) and result.returncode == 0
-        ):
-            record_progress(
-                state=state,
-                turn=metrics.model_turns
-            )
+        # if (
+        #     is_test_command(
+        #         command
+        #     ) and result.returncode == 0
+        # ):
+        #     record_progress(
+        #         state=state,
+        #         turn=metrics.model_turns
+            # )
 
         # output = ""
         # if result.stdout:
@@ -457,3 +631,27 @@ def run_command(
     except Exception as e:
         return f"Command error: {e}"
 
+def delete_file(path: str) -> FileOperationResult:
+    target = resolve_path(path)
+
+    if not target.exists():
+        return FileOperationResult(
+            success=True,
+            changed=False,
+            message=f"Already absent: {path}",
+        )
+
+    if not target.is_file() or target.is_symlink():
+        return FileOperationResult(
+            success=False,
+            changed=False,
+            message="Target must be a regular file",
+        )
+
+    target.unlink()
+
+    return FileOperationResult(
+        success=True,
+        changed=True,
+        message=f"Deleted file: {path}",
+    )

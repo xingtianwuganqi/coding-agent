@@ -1,4 +1,4 @@
-from .planing import (
+from .planning import (
     AgentState,
     TaskStatus,
     TodoItem,
@@ -18,6 +18,9 @@ from .requirements import (
 )
 
 class CompletionStatus(Enum):
+    '''
+    完成状态
+    '''
     COMPLETE = "complete"
     INCOMPLETE = "incomplete"
     BLOCKED = "blocked"
@@ -26,6 +29,9 @@ class CompletionStatus(Enum):
 
 @dataclass
 class CompletionRequirement:
+    '''
+    完成要求模型
+    '''
     name: str
     # 使满意
     satisfied: bool
@@ -130,7 +136,9 @@ def get_completion_status(
 def evaluate_completion(
         state: AgentState
 ) -> CompletionReport:
-
+    '''
+    评估任务是否完成
+    '''
     requirements = []
 
     # 1.必须有plan

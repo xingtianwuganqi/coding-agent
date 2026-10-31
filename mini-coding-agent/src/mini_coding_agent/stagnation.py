@@ -3,9 +3,9 @@
 
 这些函数只关心「任务是否在推进」这一横切关注点，
 并不属于 Plan/Pl 本身的结构或校验逻辑，
-因此从 planing.py 拆分到这里。
+因此从旧 planning 前身模块拆分到这里。
 
-planing.py 会在文件末尾重新导出这些名字，
+planning.py 会在文件末尾重新导出这些名字，
 以保持对外接口不变。
 """
 
@@ -51,8 +51,8 @@ def is_stagnating(
     '''
     判断是不是进入了停滞
     '''
-    # 延迟导入，避免与 planing 形成循环依赖
-    from .planing import MAX_STAGNANT_TURNS
+    # 延迟导入，避免与 planning 形成循环依赖
+    from .planning import MAX_STAGNANT_TURNS
 
     if not state.plan.items:
         return False

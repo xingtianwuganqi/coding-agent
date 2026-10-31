@@ -1,0 +1,10 @@
+{
+  "case_id": "calculator_divide_by_zero",
+  "task": "修改 calculator.py：除数为 0 时抛出 ValueError，并保持正常除法可用。",
+  "expected_outcome": "complete",
+  "must_exist": ["calculator.py"],
+  "file_contains": {"calculator.py": "raise ValueError"},
+  "pytest_paths": ["calculator/test_calculator.py"],
+  "max_model_turns": 60,
+  "max_tool_calls": 90
+}

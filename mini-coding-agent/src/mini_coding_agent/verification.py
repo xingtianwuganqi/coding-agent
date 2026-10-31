@@ -7,7 +7,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .planing import AgentState
+    from .planning import AgentState
 from .tool_result import ToolResult
 from .agent_metrics import is_test_command
 from .evidence import CommandResult
@@ -62,6 +62,17 @@ CODE_EXTENSIONS = {
 def is_code_file(
     path: str,
 ) -> bool:
+    """判断给定路径是否为代码文件。
+
+    通过提取文件路径的扩展名（忽略大小写），并与 CODE_EXTENSIONS
+    中登记的受支持代码后缀集合进行比对来确定结果。
+
+    Args:
+        path: 待检测的文件路径字符串。
+
+    Returns:
+        bool: 若文件扩展名属于已知代码后缀则返回 True，否则返回 False。
+    """
 
     from pathlib import Path
 

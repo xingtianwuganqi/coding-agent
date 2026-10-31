@@ -1,0 +1,819 @@
+diff --git a/src/mini_coding_agent/agent.py b/src/mini_coding_agent/agent.py
+index 80ee42d..1e5f17d 100644
+--- a/src/mini_coding_agent/agent.py
++++ b/src/mini_coding_agent/agent.py
+@@ -5,6 +5,7 @@ import os
+ from pathlib import Path
+ from .config import WORKSPACE
+ from .checkpoint import CheckpointStore, CheckpointError, RunSession
++from .approval import authorize_tool_call, ApprovalStatus
+ 
+ from .config import MAX_MODEL_TURN
+ from .model_api import ModelCallError, call_model
+@@ -548,121 +549,114 @@ def run_agent(
+             checkpoint_store.begin_turn(session=session, assistant=turn_items[0])
+ 
+         for call in tool_calls:
+-            print(f"Tool: {call.function.name}")
+-            print(
+-                "Arguments: "
+-                + truncate_text(
+-                    str(call.function.arguments),
+-                    1000,
+-                )
+-            )
++            name = call.function.name
++            print(f"Tool: {name}")
++            print("Arguments: " + truncate_text(str(call.function.arguments), 1000))
+ 
+-            # Durable write-ahead marker BEFORE any tool side effect.
+-            if checkpoint_store is not None:
+-                checkpoint_store.before_tool(session, call.id, call.function.name, {})
+-            
++            # Important: only an actually dispatched tool gets a write-ahead
++            # marker. A Guard/Policy/User rejection has NO tool side effect.
++            execution_started = False
+             try:
+-                name = call.function.name
+                 arguments = json.loads(call.function.arguments)
+                 if not isinstance(arguments, dict):
+                     raise ValueError("Tool arguments must be a JSON object")
+ 
+                 metrics.record_tool_call(name)
+-                # 记录轨迹
+                 trace.record(
+-                    turn= metrics.model_turns,
+-                    event_type="tool",
++                    turn=metrics.model_turns,
++                    event_type="tool_requested",
+                     name=name,
+-                    detail=str(arguments)[:200]
++                    detail="arguments parsed",
+                 )
+-                
++
+                 guard_error = guard_tool_call(
+-                    name=name,
+-                    arguments=arguments,
+-                    state=state,
+-                    metrics=metrics,
+-                    trace=trace
++                    name=name, arguments=arguments,
++                    state=state, metrics=metrics, trace=trace,
+                 )
+-            
++                if not guard_error:
++                    guard_error = guard_recent_tool_call(
++                        name=name, arguments=arguments, state=state,
++                    )
++
+                 if guard_error:
+                     metrics.blocked_tool_calls += 1
+                     trace.record(
+                         turn=metrics.model_turns,
+-                        event_type="blocked",
++                        event_type="guard_rejected",
+                         name=name,
+                         detail=guard_error,
+                     )
+-
+-                    result = ToolResult.fail(
+-                        error=guard_error
+-                    )
+-
++                    result = ToolResult.fail(error=guard_error)
+                 else:
+-                    recent_error = guard_recent_tool_call(
++                    authorization = authorize_tool_call(
+                         name=name,
+                         arguments=arguments,
+-                        state=state
++                        denied_signatures=session.denied_approvals,
++                    )
++                    trace.record(
++                        turn=metrics.model_turns,
++                        event_type="approval_" + authorization.status.value,
++                        name=name,
++                        # Never log raw command arguments or file contents here.
++                        detail="signature=" + authorization.signature[:12],
+                     )
+ 
+-                    if recent_error:
++                    if not authorization.allowed:
+                         metrics.blocked_tool_calls += 1
+-                        trace.record(
+-                            turn=metrics.model_turns,
+-                            event_type="blocked_recent",
+-                            name=name,
+-                            detail=recent_error,
+-                        )
+                         result = ToolResult.fail(
+-                            error=recent_error
++                            error=authorization.reason,
++                            failure_code=(
++                                "USER_DENIED"
++                                if authorization.status == ApprovalStatus.DENIED
++                                else "POLICY_BLOCKED"
++                            ),
+                         )
+-
+                     else:
++                        # A checkpoint now means the tool may have actually
++                        # run. Save this marker as close as possible to execute.
++                        if checkpoint_store is not None:
++                            checkpoint_store.before_tool(
++                                session, call.id, name, arguments,
++                            )
++                        execution_started = True
+                         result = execute_tool_with_recovery(
+-                            name=call.function.name,
++                            name=name,
+                             arguments=arguments,
+                             state=state,
+                             metrics=metrics,
+                             trace=trace,
+                             current_turn=metrics.model_turns,
++                            preauthorized=True,
+                         )
+ 
+-                # if result.success:
+-                #     # 推进了任务
+-                #     if tool_caused_progress(
+-                #         name=name,
+-                #         result=result
+-                #     ):
+-                #         record_progress(
+-                #             state=state,
+-                #             turn=metrics.model_turns
+-                #         )
+                 tool_output = {
+                     "role": "tool",
+                     "tool_call_id": call.id,
+-                    "content": (
+-                        result.content
+-                        if result.success
+-                        else result.error
+-                    )
++                    "content": result.content if result.success else result.error,
+                 }
+-                
+-            except (json.JSONDecodeError, ValueError) as error:
+-                result = f"Tool arguments error: {error}"
+-
+-                print(f'result: \n{truncate_text(str(result), 1000)}')
+ 
++            except (json.JSONDecodeError, ValueError) as error:
++                # If the tool was already dispatched, it may have modified
++                # the workspace before raising. Keep the pending marker and
++                # require recovery; never commit it as a harmless parse error.
++                if execution_started:
++                    raise
+                 tool_output = {
+                     "role": "tool",
+                     "tool_call_id": call.id,
+-                    "content": result,
++                    "content": f"Tool arguments error: {error}",
+                 }
+ 
+-            turn_items.append(
+-                tool_output
+-            )
+-
++            turn_items.append(tool_output)
+             if checkpoint_store is not None:
+-                checkpoint_store.after_tool(session=session, tool_output=tool_output)
++                if execution_started:
++                    checkpoint_store.after_tool(
++                        session=session, tool_output=tool_output,
++                    )
++                else:
++                    checkpoint_store.skip_tool(
++                        session=session, tool_output=tool_output,
++                    )
+ 
+         # -------------------------
+         # 6. 保存完整的这一轮
+diff --git a/src/mini_coding_agent/approval.py b/src/mini_coding_agent/approval.py
+new file mode 100644
+index 0000000..c7010a7
+--- /dev/null
++++ b/src/mini_coding_agent/approval.py
+@@ -0,0 +1,121 @@
++"""Lesson 26: one policy decision and one explicit approval per tool invocation.
++
++This is a teaching-grade gate, NOT an OS sandbox. Tool implementations
++still need independent path checks; untrusted subprocesses need isolation.
++"""
++from __future__ import annotations
++
++import hashlib
++import json
++from dataclasses import dataclass
++from enum import Enum
++from typing import Callable
++
++from .permission import (
++    Permission, TOOL_PERMISSIONS, classify_command, ask_for_confirmation,
++)
++
++
++class ApprovalStatus(str, Enum):
++    ALLOWED = "allowed"
++    APPROVED = "approved"
++    DENIED = "denied"
++    BLOCKED = "blocked"
++
++
++@dataclass(frozen=True)
++class ApprovalDecision:
++    status: ApprovalStatus
++    reason: str
++    signature: str
++
++    @property
++    def allowed(self) -> bool:
++        return self.status in {ApprovalStatus.ALLOWED, ApprovalStatus.APPROVED}
++
++
++# Intentionally tiny allowlist of command forms in *trusted* workspaces.
++# A test runner or arbitrary git option can execute code / have side effects.
++READ_ONLY_COMMAND_FORMS = {"pwd", "ls", "ls -la", "git status", "git diff"}
++
++
++def policy_for_tool(name: str, arguments: dict) -> Permission:
++    policy = TOOL_PERMISSIONS.get(name, Permission.BLOCKED)
++    if policy == Permission.BLOCKED:
++        return policy
++    if name == "run_command":
++        command = arguments.get("command")
++        if not isinstance(command, str):
++            return Permission.BLOCKED
++        original = classify_command(command)
++        if original == Permission.BLOCKED:
++            return Permission.BLOCKED
++        # A command that was classified SAFE at the legacy layer might
++        # still run project code, write a file, or have unexpected flags.
++        if original == Permission.SAFE and command.strip() not in READ_ONLY_COMMAND_FORMS:
++            return Permission.CONFIRM
++        return original
++    return policy
++
++
++def approval_signature(name: str, arguments: dict) -> str:
++    """Exact call signature. A denial persists for this call in one RunSession."""
++    content = json.dumps(
++        {"name": name, "arguments": arguments},
++        ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str,
++    )
++    return hashlib.sha256(content.encode("utf-8")).hexdigest()
++
++
++def approval_detail(name: str, arguments: dict) -> str:
++    if name == "delete_file":
++        return f"Target file: {arguments.get('path', '<unknown>')}"
++    if name == "run_command":
++        return f"Command: {arguments.get('command', '<missing>')}"
++    return "Arguments: " + json.dumps(arguments, ensure_ascii=False, default=str)
++
++
++def authorize_tool_call(
++    name: str,
++    arguments: dict,
++    *,
++    denied_signatures: set[str] | None = None,
++    confirm: Callable[[str, str | None], bool] | None = None,
++) -> ApprovalDecision:
++    """Fail closed: only a positive y/yes approves a CONFIRM tool.
++
++    `denied_signatures` is scoped to the current RunSession; a previous
++    rejection of exactly the same call must not re-prompt the user.
++    """
++    signature = approval_signature(name, arguments)
++    policy = policy_for_tool(name, arguments)
++    if policy == Permission.BLOCKED:
++        return ApprovalDecision(
++            ApprovalStatus.BLOCKED, f"POLICY_BLOCKED: {name}", signature
++        )
++    if policy in {Permission.SAFE, Permission.WRITE}:
++        return ApprovalDecision(ApprovalStatus.ALLOWED, "Allowed by policy", signature)
++
++    if denied_signatures is not None and signature in denied_signatures:
++        return ApprovalDecision(
++            ApprovalStatus.DENIED,
++            "USER_DENIED: this exact operation was already rejected in this run.",
++            signature,
++        )
++
++    if confirm is None:
++        confirm = ask_for_confirmation
++    try:
++        approved = confirm(name, approval_detail(name, arguments))
++    except (EOFError, KeyboardInterrupt):
++        approved = False
++    if approved:
++        return ApprovalDecision(ApprovalStatus.APPROVED, "Explicit user approval", signature)
++
++    if denied_signatures is not None:
++        denied_signatures.add(signature)
++    return ApprovalDecision(
++        ApprovalStatus.DENIED,
++        "USER_DENIED: user denied or did not approve the operation.",
++        signature,
++    )
+diff --git a/src/mini_coding_agent/checkpoint.py b/src/mini_coding_agent/checkpoint.py
+index e278361..49158ec 100644
+--- a/src/mini_coding_agent/checkpoint.py
++++ b/src/mini_coding_agent/checkpoint.py
+@@ -68,6 +68,8 @@ class RunSession:
+     # ToolResult and AgentState have both been saved.
+     # 当前已准备执行、但结果尚未持久化的工具
+     pending_tool: dict[str, Any] | None = None
++    # Remember exact rejected operations across a safe resume.
++    denied_approvals: set[str] = field(default_factory=set)
+ 
+ 
+ _TYPES['RunSession'] = RunSession
+@@ -250,6 +252,16 @@ class CheckpointStore:
+         session.pending_tool = None
+         self.save(session)
+ 
++    def skip_tool(self, session: RunSession, tool_output: dict[str, Any]) -> None:
++        """Record a guard/policy/approval rejection without an execution marker.
++
++        No tool was invoked; `pending_tool` must remain None.
++        """
++        if session.inflight_turn is None or session.pending_tool is not None:
++            raise CheckpointError('Cannot skip a tool while execution is pending')
++        session.inflight_turn.append(tool_output)
++        self.save(session)
++
+     def finish_turn(self, session: RunSession) -> None:
+         if session.pending_tool is not None or session.inflight_turn is None:
+             raise CheckpointError('Cannot commit incomplete turn')
+diff --git a/src/mini_coding_agent/permission.py b/src/mini_coding_agent/permission.py
+index 4962b88..ab4233c 100644
+--- a/src/mini_coding_agent/permission.py
++++ b/src/mini_coding_agent/permission.py
+@@ -163,9 +163,12 @@ def ask_for_confirmation(
+     if detail:
+         print(detail)
+ 
+-    answer = input(
+-        "\nDo you want to allow this operation? [y/N]: "
+-    )
++    try:
++        answer = input(
++            "\nDo you want to allow this operation? [y/N]: "
++        )
++    except (EOFError, KeyboardInterrupt):
++        return False
+ 
+     answer = answer.strip().lower()
+ 
+diff --git a/src/mini_coding_agent/tool_result.py b/src/mini_coding_agent/tool_result.py
+index d0185eb..69c604e 100644
+--- a/src/mini_coding_agent/tool_result.py
++++ b/src/mini_coding_agent/tool_result.py
+@@ -11,6 +11,9 @@ class ToolResult:
+ 
+     return_code: int | None = None
+ 
++    # Machine-readable refusal distinct from tool execution failure.
++    failure_code: str | None = None
++
+     # 新增
+     # # 状态已经改变
+     # state_changed: bool = False
+@@ -43,6 +46,7 @@ class ToolResult:
+         return_code: int | None = None,
+         # state_changed: bool = False,
+         # verification_succeeded: bool = False
++        failure_code: str | None = None,
+     ) -> "ToolResult":
+ 
+         return cls(
+@@ -50,6 +54,7 @@ class ToolResult:
+             content=content,
+             error=error,
+             return_code=return_code,
++            failure_code=failure_code,
+             # state_changed=state_changed,
+             # verification_succeeded=verification_succeeded
+         )
+\ No newline at end of file
+diff --git a/src/mini_coding_agent/tool_runner.py b/src/mini_coding_agent/tool_runner.py
+index 67cf77e..a650088 100644
+--- a/src/mini_coding_agent/tool_runner.py
++++ b/src/mini_coding_agent/tool_runner.py
+@@ -7,8 +7,8 @@ from dataclasses import asdict
+ from .permission import (
+     Permission,
+     TOOL_PERMISSIONS,
+-    ask_for_confirmation,
+ )
++from .approval import authorize_tool_call, policy_for_tool
+ from .planning import (
+     AgentState,
+     set_plan,
+@@ -110,6 +110,8 @@ def execute_tool(
+         state: AgentState,
+         metrics: AgentMetrics,
+         trace: AgentTrace,
++        *,
++        preauthorized: bool = False,
+ ) -> ToolResult:
+     '''
+     真正的调用工具
+@@ -122,26 +124,25 @@ def execute_tool(
+                 error=f"Unknown tool: {name}"
+             )
+ 
+-        # 调用工具前对权限进行询问
+-        permission = TOOL_PERMISSIONS[name]
+-
+-        if permission == Permission.BLOCKED:
+-            return ToolResult(
+-                success=False,
+-                error=f"Tool is blocked: {name}"
+-            )
+-        
+-        if permission == Permission.CONFIRM:
+-            if not ask_for_confirmation(
+-                name,
+-                detail=format_confirmation_detail(
+-                    name=name,
+-                    arguments=arguments,
+-                ),
+-            ):
+-                return ToolResult(
+-                    success=False,
+-                    error="User denied the tool call."
++        # Direct callers must still pass the same policy and approval gate.
++        # The Agent Loop obtains approval BEFORE Checkpoint.before_tool,
++        # then uses preauthorized=True to prevent a second prompt.
++        if preauthorized:
++            if policy_for_tool(name, arguments) == Permission.BLOCKED:
++                return ToolResult.fail(
++                    error=f"POLICY_BLOCKED: {name}",
++                    failure_code="POLICY_BLOCKED",
++                )
++        else:
++            authorization = authorize_tool_call(name, arguments)
++            if not authorization.allowed:
++                code = (
++                    "USER_DENIED" if authorization.status.value == "denied"
++                    else "POLICY_BLOCKED"
++                )
++                return ToolResult.fail(
++                    error=authorization.reason,
++                    failure_code=code,
+                 )
+ 
+         if name == "set_goal":
+@@ -230,6 +231,7 @@ def execute_tool(
+             result = run_command(
+                 state=state,
+                 metrics=metrics,
++                approved=True,
+                 **arguments
+             )
+ 
+@@ -464,6 +466,8 @@ def execute_tool_with_recovery(
+     metrics,
+     trace,
+     current_turn: int,
++    *,
++    preauthorized: bool = False,
+ ) -> ToolResult:
+ 
+     '''
+@@ -487,6 +491,20 @@ def execute_tool_with_recovery(
+     注意：最多只会自动重试一次，不会无限重试。
+     '''
+ 
++    # Permission denial is a policy outcome, not a tool execution or a
++    # recoverable failure. Authorize once when this API is called directly.
++    if not preauthorized:
++        authorization = authorize_tool_call(name, arguments)
++        if not authorization.allowed:
++            return ToolResult.fail(
++                error=authorization.reason,
++                failure_code=(
++                    "USER_DENIED" if authorization.status.value == "denied"
++                    else "POLICY_BLOCKED"
++                ),
++            )
++        preauthorized = True
++
+     # =========================
+     # 第一次执行
+     # =========================
+@@ -498,7 +516,8 @@ def execute_tool_with_recovery(
+         arguments=arguments,
+         state=state,
+         metrics=metrics,
+-        trace=trace
++        trace=trace,
++        preauthorized=preauthorized,
+     )
+ 
+     # =========================
+@@ -513,6 +532,11 @@ def execute_tool_with_recovery(
+ 
+         return result
+ 
++    # Explicit denial / policy blocking is NOT an execution failure;
++    # never put it through the generic retry or failure-streak mechanism.
++    if result.failure_code in {"USER_DENIED", "POLICY_BLOCKED"}:
++        return result
++
+     # =========================
+     # 第一次失败
+     # =========================
+@@ -564,7 +588,8 @@ def execute_tool_with_recovery(
+             arguments=arguments,
+             state=state,
+             metrics=metrics,
+-            trace=trace
++            trace=trace,
++            preauthorized=preauthorized,
+         )
+ 
+         # ---------------------
+diff --git a/src/mini_coding_agent/tools.py b/src/mini_coding_agent/tools.py
+index 2ea32e3..1a2e74b 100644
+--- a/src/mini_coding_agent/tools.py
++++ b/src/mini_coding_agent/tools.py
+@@ -24,9 +24,9 @@ from .evidence import (
+ )
+ from .permission import (
+     Permission,
+-    classify_command,
+     ask_for_confirmation,
+ )
++from .approval import policy_for_tool
+ 
+ from .agent_metrics import (
+     AgentMetrics,
+@@ -39,12 +39,25 @@ from .planning import (
+ )
+ 
+ 
++PROTECTED_COMPONENTS = {".env", ".git", ".venv", ".mini_agent"}
++
++
+ def resolve_path(path: str) -> Path:
+-    target = (WORKSPACE / path).resolve()
++    """Keep file tools inside the workspace and away from private internals.
++
++    This does not sandbox `run_command`, which requires a separate OS-level
++    security boundary if project content is untrusted.
++    """
++    root = WORKSPACE.resolve()
++    target = (root / path).resolve()
+ 
+-    if target != WORKSPACE and WORKSPACE not in target.parents:
++    if target != root and root not in target.parents:
+         raise ValueError("Path is outside the workspace")
+ 
++    relative = target.relative_to(root)
++    if any(part in PROTECTED_COMPONENTS for part in relative.parts):
++        raise ValueError("Protected workspace path is not accessible")
++
+     return target
+ 
+ 
+@@ -565,16 +578,20 @@ def run_command(
+         state: AgentState,
+         metrics: AgentMetrics,
+         command: str,
++    *,
++    approved: bool = False,
+ ) -> CommandResult | str:
+ 
+-    permission = classify_command(command=command)
++    permission = policy_for_tool(
++        "run_command", {"command": command}
++    )
+ 
+     if permission == Permission.BLOCKED:
+         return f"Blocked dangerous command: {command}"
+ 
+-    if permission == Permission.CONFIRM:
++    if permission == Permission.CONFIRM and not approved:
+         if not ask_for_confirmation(command=command):
+-            return "User deinied the command"
++            return "USER_DENIED: user did not approve the command"
+ 
+     try:
+         args = shlex.split(command)
+diff --git a/tests/test_approval_gate.py b/tests/test_approval_gate.py
+new file mode 100644
+index 0000000..6982642
+--- /dev/null
++++ b/tests/test_approval_gate.py
+@@ -0,0 +1,204 @@
++"""Lesson 26: approval != ask_user; denial != execution error."""
++from types import SimpleNamespace
++import builtins
++import pytest
++
++from mini_coding_agent.approval import (
++    ApprovalStatus, authorize_tool_call, policy_for_tool,
++)
++from mini_coding_agent.permission import Permission, ask_for_confirmation
++from mini_coding_agent.checkpoint import CheckpointStore, RunSession
++from mini_coding_agent.planning import create_agent_state
++from mini_coding_agent.agent_metrics import AgentMetrics
++from mini_coding_agent.agent_trace import AgentTrace
++from mini_coding_agent.tool_runner import execute_tool_with_recovery
++from mini_coding_agent import tools as tools_module
++
++
++@pytest.mark.parametrize('name,args,expected', [
++    ('read_file', {'path': 'note.txt'}, Permission.SAFE),
++    ('write_file', {'path': 'note.txt', 'content': 'hello'}, Permission.WRITE),
++    ('delete_file', {'path': 'note.txt'}, Permission.CONFIRM),
++    ('run_command', {'command': 'git diff'}, Permission.SAFE),
++    ('run_command', {'command': 'git diff --output=report.txt'}, Permission.CONFIRM),
++    ('run_command', {'command': 'pytest -q'}, Permission.CONFIRM),
++    ('run_command', {'command': 'uv run pytest'}, Permission.CONFIRM),
++    ('run_command', {'command': 'rm -rf /'}, Permission.BLOCKED),
++    ('unknown_tool', {}, Permission.BLOCKED),
++])
++def test_policy_classification(name, args, expected):
++    assert policy_for_tool(name, args) == expected
++
++
++def test_explicit_approval_allows_exact_operation():
++    requested = []
++    def approve(command, detail):
++        requested.append((command, detail))
++        return True
++
++    result = authorize_tool_call(
++        'delete_file', {'path': 'note.txt'}, confirm=approve,
++    )
++    assert result.status == ApprovalStatus.APPROVED
++    assert result.allowed
++    assert requested == [('delete_file', 'Target file: note.txt')]
++
++
++def test_denial_is_cached_within_one_run_not_reprompted():
++    denied = set()
++    asked = []
++    def refuse(name, detail):
++        asked.append((name, detail))
++        return False
++
++    first = authorize_tool_call(
++        'delete_file', {'path': 'keep.txt'}, denied_signatures=denied, confirm=refuse,
++    )
++    second = authorize_tool_call(
++        'delete_file', {'path': 'keep.txt'}, denied_signatures=denied, confirm=refuse,
++    )
++    assert first.status == second.status == ApprovalStatus.DENIED
++    assert len(asked) == 1
++    assert first.signature in denied
++
++
++def test_new_args_require_new_approval():
++    denied = set()
++    called = []
++    def refuse(name, detail):
++        called.append(detail)
++        return False
++    authorize_tool_call('delete_file', {'path': 'a.txt'}, denied_signatures=denied, confirm=refuse)
++    authorize_tool_call('delete_file', {'path': 'b.txt'}, denied_signatures=denied, confirm=refuse)
++    assert len(called) == 2
++
++
++def test_noninteractive_confirmation_defaults_to_deny(monkeypatch):
++    def closed(_prompt=''):
++        raise EOFError()
++    monkeypatch.setattr(builtins, 'input', closed)
++    assert ask_for_confirmation('delete_file') is False
++    assert authorize_tool_call('delete_file', {'path': 'a.txt'}).status == ApprovalStatus.DENIED
++
++
++def test_user_denial_skips_generic_failure_recovery(monkeypatch, tmp_path):
++    monkeypatch.setattr(tools_module, 'WORKSPACE', tmp_path)
++    f = tmp_path / 'keep.txt'
++    f.write_text('hello')
++    monkeypatch.setattr(builtins, 'input', lambda _='': 'n')
++    metrics = AgentMetrics()
++    state = create_agent_state('test')
++    result = execute_tool_with_recovery(
++        'delete_file', {'path': 'keep.txt'},
++        state, metrics, AgentTrace(), current_turn=1,
++    )
++    assert not result.success
++    assert result.failure_code == 'USER_DENIED'
++    assert metrics.auto_retries == 0
++    assert metrics.tool_failures == 0
++    assert metrics.tool_executions == 0  # no side-effectful tool dispatched
++    assert f.exists()
++
++
++def test_skipped_tool_checkpoint_is_safe_to_load(tmp_path):
++    workspace = tmp_path / 'workspace'
++    workspace.mkdir()
++    store = CheckpointStore(tmp_path / 'checkpoint.json', workspace)
++    session = RunSession(state=create_agent_state('test'))
++    session.denied_approvals.add('a-signature')
++    assistant = {'role': 'assistant', 'tool_calls': [
++        {'id': 'call1', 'function': {'name': 'delete_file', 'arguments': '{}'}}
++    ]}
++    store.begin_turn(session, assistant)
++    store.skip_tool(session, {
++        'role': 'tool', 'tool_call_id': 'call1', 'content': 'USER_DENIED',
++    })
++    store.finish_turn(session)
++    loaded = store.load()
++    assert loaded.denied_approvals == {'a-signature'}
++    assert loaded.pending_tool is None
++    assert loaded.inflight_turn is None
++    assert loaded.history_turns[0][1]['content'] == 'USER_DENIED'
++
++
++def test_checkpoint_before_tool_keeps_uncertain_marker(tmp_path):
++    from mini_coding_agent.checkpoint import RecoveryRequired
++    workspace = tmp_path / 'workspace'
++    workspace.mkdir()
++    store = CheckpointStore(tmp_path / 'checkpoint.json', workspace)
++    session = RunSession(state=create_agent_state('test'))
++    store.begin_turn(session, {'role': 'assistant', 'tool_calls': []})
++    store.before_tool(session, 'call1', 'delete_file', {'path': 'keep.txt'})
++    with pytest.raises(RecoveryRequired, match='UNCERTAIN tool'):
++        store.load()
++
++
++def test_agent_denial_saved_without_pending_tool_and_not_reprompted(monkeypatch, tmp_path):
++    """Exercise the actual Agent Loop, not just the helper function."""
++    import json
++    from mini_coding_agent import agent
++    from mini_coding_agent.planning import TodoItem
++
++    workspace = tmp_path / 'workspace'
++    workspace.mkdir()
++    target = workspace / 'keep.txt'
++    target.write_text('important')
++    monkeypatch.setattr(agent, 'WORKSPACE', workspace)
++    monkeypatch.setattr(tools_module, 'WORKSPACE', workspace)
++    monkeypatch.setattr(agent, 'MAX_MODEL_TURN', 2)
++    monkeypatch.setattr(agent, 'compress_history', lambda **kwargs: None)
++    monkeypatch.setattr(agent, 'print_fixed_context_breakdown', lambda **kwargs: None)
++    monkeypatch.setattr(agent, 'print_context_debug', lambda **kwargs: None)
++    monkeypatch.setattr(agent, 'print_state_debug', lambda *args: None)
++
++    original_create = agent.create_agent_state
++    def setup_state(*args, **kwargs):
++        state = original_create(*args, **kwargs)
++        state.goal.locked = True
++        state.requirements.locked = True
++        state.plan.revision = 1
++        state.plan.items = [TodoItem(id=1, content='Inspect deletion', status='pending')]
++        # TaskStatus is a str-valued Enum in this project; use enum instance.
++        from mini_coding_agent.planning import TaskStatus
++        state.plan.items[0].status = TaskStatus.PENDING
++        return state
++    monkeypatch.setattr(agent, 'create_agent_state', setup_state)
++
++    class Message:
++        content = ''
++        def __init__(self, idx):
++            self.tool_calls = [SimpleNamespace(
++                id=f'call_{idx}',
++                function=SimpleNamespace(name='delete_file', arguments=json.dumps({'path': 'keep.txt'})),
++            )]
++        def model_dump(self, **kwargs):
++            return {'role': 'assistant', 'tool_calls': [
++                {'id': self.tool_calls[0].id, 'type': 'function', 'function': {
++                    'name': 'delete_file', 'arguments': self.tool_calls[0].function.arguments,
++                }}
++            ]}
++
++    turns = iter([Message(1), Message(2)])
++    monkeypatch.setattr(agent, 'call_model', lambda *args, **kwargs: next(turns))
++    called = []
++    def deny(prompt=''):
++        called.append(prompt)
++        return 'n'
++    monkeypatch.setattr(builtins, 'input', deny)
++    checkpoint_path = tmp_path / 'checkpoint.json'
++    output = agent.run_agent('test task', checkpoint_path=str(checkpoint_path))
++    assert 'Outcome: stopped' in output
++    assert len(called) == 1
++    assert target.read_text() == 'important'
++    loaded = CheckpointStore(checkpoint_path, workspace).load()
++    assert len(loaded.history_turns) == 2
++    assert loaded.pending_tool is None
++    assert len(loaded.denied_approvals) == 1
++
++
++@pytest.mark.parametrize('path', ['.env', '.git/config', '.venv/pyvenv.cfg', '.mini_agent/state.json'])
++def test_sensitive_workspace_paths_cannot_be_read_or_modified(monkeypatch, tmp_path, path):
++    from mini_coding_agent.tools import resolve_path
++    monkeypatch.setattr(tools_module, 'WORKSPACE', tmp_path)
++    with pytest.raises(ValueError, match='Protected workspace path'):
++        resolve_path(path)

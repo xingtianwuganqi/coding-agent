@@ -11,7 +11,7 @@ from .agent_metrics import (
 )
 
 if TYPE_CHECKING:
-    from .planing import AgentState
+    from .planning import AgentState
 
 class FailureKind(str, Enum):
     '''

@@ -1,5 +1,5 @@
 import json
-from .planing import (
+from .planning import (
     AgentState
 )
 
@@ -22,6 +22,7 @@ ACTION_TOOLS = {
     "write_file",
     "replace_text",
     "run_command",
+    "delete_file",
 }
 
 def guard_tool_call(
@@ -34,6 +35,11 @@ def guard_tool_call(
     '''
     工具调用守卫
     '''
+    # ask_user 只与用户交互，不修改工作区，
+    # 因此允许在任意阶段调用（包括 goal/requirements 锁定之前）。
+    if name == "ask_user":
+        return None
+
     # 1.goal gate
     if name == "set_goal" and state.goal.locked:
         return (
@@ -61,13 +67,19 @@ def guard_tool_call(
     if not state.requirements.locked:
         if name == "set_requirements":
             return None
-        return (
-            "RUNTIME GUARD: task requirements "
-            "have not been extracted yet. "
-            "Call set_requirements first and "
-            "record the explicit requirements "
-            "from the user's request."
-        )
+
+        # 允许在 requirements 锁定前做只读检索，
+        # 以便先定位 must_change 的 target（文件路径）。
+        # 检索仍然受后面的 pre-plan inspection 预算约束。
+        if name not in RETRIEVAL_TOOLS:
+            return (
+                "RUNTIME GUARD: task requirements "
+                "have not been extracted yet. "
+                "You may use list_files/read_file/search_text "
+                "to locate the relevant files, then call "
+                "set_requirements. Other task actions are "
+                "blocked until requirements are locked."
+            )
 
     # 2.Requirement constraints
     requirement_error = guard_requirement_constraints(
@@ -125,6 +137,13 @@ def guard_tool_call(
     if name in RETRIEVAL_TOOLS:
         if not state.plan.items:
             if state.pre_plan_inspection_count >= MAX_PRE_PLAN_INSPECTIONS:
+                if not state.requirements.locked:
+                    return (
+                        "RUNTIME GUARD: enough pre-plan "
+                        "inspection has been performed. "
+                        "Call set_requirements now, then "
+                        "create the plan with set_plan."
+                    )
                 return (
                     "RUNTIME GUARD: enough pre-plan "
                     "inspection has been performed. "

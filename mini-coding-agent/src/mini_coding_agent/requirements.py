@@ -4,13 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
+from collections.abc import Callable
 from .tool_result import ToolResult
+from .config import WORKSPACE
 import re
 
 
 if TYPE_CHECKING:
-    from .planing import AgentState
+    from .planning import AgentState
 
 class RequirementKind(str, Enum):
     # 用户明确要求某个文件/模块必须修改
@@ -90,6 +93,10 @@ def normalize_file_target(
     # 2. 去除空格，同一路径分隔符
     target = target.strip().replace("\\", "/")
 
+    # 兼容模型常见的 "./" 前缀写法
+    while target.startswith("./"):
+        target = target[2:]
+
     if not target:
         raise ValueError(
             f"Requirement target cannot be empty"
@@ -119,8 +126,120 @@ def normalize_file_target(
 
     return path.as_posix()
 
+
+# 搜索裸文件名时跳过的目录：第三方依赖/缓存中的同名文件
+# 不应参与唯一匹配判断。
+IGNORED_TARGET_DIRS = {
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".pytest_cache",
+    "node_modules",
+}
+
+MAX_REPORTED_TARGET_MATCHES = 10
+
+# 当裸文件名命中多个文件时，由调用方决定如何选择：
+# resolver(target, matches) -> 选中的工作区相对路径，或 None 表示未选择
+TargetResolver = Callable[[str, list[str]], str | None]
+
+
+def find_workspace_files_by_name(
+        name: str,
+) -> list[str]:
+    '''
+    在工作区内按文件名查找文件，返回项目相对路径列表。
+    '''
+    matches = []
+
+    for path in WORKSPACE.rglob("*"):
+        if not path.is_file():
+            continue
+
+        if path.name != name:
+            continue
+
+        relative = path.relative_to(WORKSPACE)
+
+        if any(
+            part in IGNORED_TARGET_DIRS
+            for part in relative.parts[:-1]
+        ):
+            continue
+
+        matches.append(relative.as_posix())
+
+    return sorted(matches)
+
+
+def resolve_file_target(
+        target: str,
+        resolver: TargetResolver | None = None,
+) -> str:
+    '''
+    将 Requirement Target 解析为工作区相对文件路径。
+
+    - 已经包含目录的路径：只做 normalize_file_target 的语法校验；
+    - 裸文件名：在工作区内按文件名查找，
+      唯一命中时补全为完整相对路径；
+      没有命中时校验失败；
+      命中多个时调用 resolver（通常用 ask_user 让用户选择），
+      未提供 resolver 或用户未选择时校验失败。
+    '''
+    normalized = normalize_file_target(target)
+
+    # 已包含目录，视为完整相对路径
+    if "/" in normalized:
+        if (WORKSPACE / normalized).is_dir():
+            raise ValueError(
+                f"Target is a directory, not a file: '{target}'. "
+                "must_change requires a file path."
+            )
+        return normalized
+
+    matches = find_workspace_files_by_name(normalized)
+
+    if len(matches) == 1:
+        return matches[0]
+
+    if not matches:
+        raise ValueError(
+            f"File not found in workspace: '{target}'. "
+            "Provide the complete workspace-relative file path."
+        )
+
+    shown = matches[:MAX_REPORTED_TARGET_MATCHES]
+    suffix = ""
+
+    if len(matches) > len(shown):
+        suffix = f" (and {len(matches) - len(shown)} more)"
+
+    listing = f"{', '.join(shown)}{suffix}"
+
+    # 命中多个文件：交给 resolver（ask_user）选择
+    if resolver is not None:
+        selected = resolver(target, matches)
+
+        if selected in matches:
+            return selected
+
+        raise ValueError(
+            f"Ambiguous file target: '{target}' matches multiple "
+            f"files: {listing}. No file was selected. "
+            "Provide the complete workspace-relative file path."
+        )
+
+    raise ValueError(
+        f"Ambiguous file target: '{target}' matches multiple "
+        f"files: {listing}. "
+        "Provide the complete workspace-relative file path."
+    )
+
+
 def validate_requirement_payloads(
         items: list[dict],
+        resolver: TargetResolver | None = None,
 ) -> list[dict]:
     '''
     校验并规范化模型传入的 Requirements。
@@ -140,7 +259,10 @@ def validate_requirement_payloads(
             # 没有指定target 时，保留旧版本通用修改语义
             if target is not None and target != "":
                 try:
-                    normalized_target = normalize_file_target(target)
+                    normalized_target = resolve_file_target(
+                        target,
+                        resolver=resolver,
+                    )
                     normalized_item["target"] = normalized_target
                 except ValueError as exc:
                     raise ValueError(
@@ -154,6 +276,7 @@ def validate_requirement_payloads(
 def set_requirements(
     state: AgentState,
     requirements: list[dict],
+    resolver: TargetResolver | None = None,
 ) -> ToolResult:
     '''
     构建需求
@@ -170,7 +293,8 @@ def set_requirements(
     # 获取模型传入的数据，在状态发生修改前进行校验：
     try:
         validated_requirements = validate_requirement_payloads(
-            requirements
+            requirements,
+            resolver=resolver,
         )
     except ValueError as exc:
         return ToolResult.fail(
@@ -334,9 +458,6 @@ def build_requirement_context(
         lines.append(line)
 
     return "\n".join(lines)
-
-
-from pathlib import PurePosixPath
 
 
 def normalize_path(
@@ -599,7 +720,9 @@ def evaluate_requirement(
         state: AgentState,
         requirement: TaskRequirement,
 ) -> RequirementCheck:
-
+    '''
+    评估单条 Requirement 是否满足
+    '''
     # MUST_CHANGE
     if requirement.kind == RequirementKind.MUST_CHANGE:
         # 没指定 target

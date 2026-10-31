@@ -17,6 +17,8 @@ class ToolResult:
 
     # # 已经验证成功
     # verification_succeeded: bool = False
+    failure_code: str | None = None,
+
 
     @classmethod
     def ok(
@@ -43,6 +45,7 @@ class ToolResult:
         return_code: int | None = None,
         # state_changed: bool = False,
         # verification_succeeded: bool = False
+        failure_code: str | None = None,
     ) -> "ToolResult":
 
         return cls(
@@ -50,6 +53,7 @@ class ToolResult:
             content=content,
             error=error,
             return_code=return_code,
+            failure_code=failure_code
             # state_changed=state_changed,
             # verification_succeeded=verification_succeeded
         )

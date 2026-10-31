@@ -1,0 +1,794 @@
+diff --git a/evals/README.md b/evals/README.md
+new file mode 100644
+index 0000000..f0d7cc5
+--- /dev/null
++++ b/evals/README.md
+@@ -0,0 +1,22 @@
++# Lesson 27: Agent Evaluation Cases
++
++**Separation**: The Agent works in `evals/fixtures/calculator_before/` copied to a new isolated workspace. The evaluator owns `evals/oracles/calculator/test_calculator.py`, *outside* the Agent editable workspace. The Agent must not see or modify the hidden oracle tests.
++
++1. Copy `evals/fixtures/calculator_before/` to a fresh isolated workspace, e.g. `/tmp/mini-agent-eval-001/`. Use a new directory for every run.
++2. Start Mini Coding Agent **with that copied fixture as your current working directory** and save its checkpoint **outside** the fixture. Use its task prompt from the case JSON.
++3. Once the Agent completes (or stops), evaluate the final state by loading the checkpoint and checking the workspace. Only add `--run-tests` if you trust the external oracle test source.
++4. Run each version multiple times from independently reset fixtures. Save one result JSON per run; aggregate into version JSON arrays for regression analysis.
++
++```bash
++uv run python -m mini_coding_agent.eval_cli inspect \
++  --case evals/cases/calculator_divide_by_zero.json \
++  --checkpoint "$HOME/.mini-agent-checkpoints/calculator-001.json" \
++  --workspace "/tmp/mini-agent-eval-001" \
++  --oracle-root evals/oracles \
++  --run-tests \
++  --output "$HOME/.mini-agent-evals/calculator-001.json"
++```
++
++**Practical note:** The executable is part of the Mini Agent package. When running it from a fixture cwd, you must have installed the package or set its import path. Executing arbitrary external pytest files can execute Python code; use only trusted oracle tests and an isolated subprocess/container. The CLI does not automatically start an Agent or provide a security sandbox.
++
++The `file_contains` oracle is deliberately weak. An independent test checking behavior and side effects is the stronger correctness signal. A 'COMPLETE' label without independent success is a **false complete**.
+diff --git a/evals/cases/calculator_divide_by_zero.json b/evals/cases/calculator_divide_by_zero.json
+new file mode 100644
+index 0000000..d04d14e
+--- /dev/null
++++ b/evals/cases/calculator_divide_by_zero.json
+@@ -0,0 +1,10 @@
++{
++  "case_id": "calculator_divide_by_zero",
++  "task": "修改 calculator.py：除数为 0 时抛出 ValueError，并保持正常除法可用。",
++  "expected_outcome": "complete",
++  "must_exist": ["calculator.py"],
++  "file_contains": {"calculator.py": "raise ValueError"},
++  "pytest_paths": ["calculator/test_calculator.py"],
++  "max_model_turns": 60,
++  "max_tool_calls": 90
++}
+diff --git a/evals/fixtures/calculator_before/calculator.py b/evals/fixtures/calculator_before/calculator.py
+new file mode 100644
+index 0000000..af0f193
+--- /dev/null
++++ b/evals/fixtures/calculator_before/calculator.py
+@@ -0,0 +1,4 @@
++"""Deliberately faulty evaluation fixture. Copy this into an isolated workspace."""
++
++def divide(a: float, b: float) -> float:
++    return a / b
+diff --git a/evals/oracles/calculator/__pycache__/test_calculator.cpython-313-pytest-9.0.2.pyc b/evals/oracles/calculator/__pycache__/test_calculator.cpython-313-pytest-9.0.2.pyc
+new file mode 100644
+index 0000000000000000000000000000000000000000..522ede3d8992749b6294619043207c88a232f43d
+GIT binary patch
+literal 1919
+zcma(RO>Y}TbY|CHe<W@QR0t}ZEDnXN)Y`F$Qvw)BX{C}#sg$izB_Bo`@5C{zcULp(
+zmKY&bqK679kwYt0;umn_!2h72QW#a@030H5K;(eb6K`g{{y>%J*!#ZU%zHEMz2ib5
+zk6_Jz_xnc+7@^-JlPqmW9G?f`F0v6rHnz1b%ru4d%@o&6w3%jx8EY~u0~&oRyP0D-
+zkflx`mbcRYXF8f?49;I+eI8NQ-0!+B_05R#h?mVRN<;H<^NRh!g^OmiPtA=E^`qCg
+zN!@Pb?0VF^9<Yyj=(K71NCvfSVPUx4Yh9PNhe0Zo1*pS!{0hVl5n~_OnvYwMS-h^|
+z`Y<bBv-P0X)Ze^>P;g;+sCWNFsFmc6c2bGo7?&WcW@;7N>8netT776?8!aQT*^yEF
+zXO&QWD0vI8yEt`<dVy(&5^9YE^<nf$jLxYk@7a;zh<K9sWehQnGkc;}6D4Q;uO)tJ
+zOYNyG^~BQ7l+$P7KK-<vwR6q%3RaxanoClgi0_$1HpV5?G?Kj%OtFm`P!I57__PKN
+z-|rwRzkMXH|481<Q5t}SA8U<<g$L`Wm&1cKi|0Qb5@y4c)QZKIC9YZgj1sI`+{%Au
+zHe&U<#hENYD=l;|mY^oVssw8itPkcK&MAwOceQG9kqQq0=ai$!zZV|J#vl$8^Q7%~
+z9$_?O?VuMrjEY%MlihyTi@H7+h8KVZ7cUULAM`y}nUand>^dItogNiA!ks-TcMvBw
+z)VbZjzsOj?#B*dXU_B=y^pntYd?x~pl@T-YggC_NB=h<tQ=eqsm}JhyA;w!*SEjfc
+z&%oW7@e*5=o*z|QCvqwt<vj3f=ZNg|N<Rc4bu085<W>oo(*}J75^eWACkj|a-OrdW
+zhX>-MlKC<rkI31;AsYsrhUAg_4uBiz=VwoTpDG?Y0B)}xmcDENac@I``!mIdsp0>J
+zRPk10#Kpt|=`xbtA9J8MEX9f+<=!JQ*#e~ZHb$P41RQ(}aiOUpCI^WcVmE=fJ241$
+zM(rzo;svcf8d6EAYsf?`nY3DRR3}3ZMzZ>i`3`y+ok7WHabeW#X(n2P9Zb|g4Sf;q
+zVN2g;vNf1I-%1H1u1{ewr^_i9`41hhPgO~&3jPK$Q<^UT5X<UWlJ_9H2V_85Kw?({
+z@7t$@%4%e<g82-5d<nn}^e8v?Rq>1Boxy`#=~4E?Ep}MFUHC^w`K5=s(oeb4V=m|H
+z*M+M7ZT{ViH7hcNxIvo`kxjaT&4Yz_k;L(q<C2D|C^LGUbtCAFkw|2QGA3sXD@n)v
+zxWH6is+d%m?6fp8B~VFb-|hu&-=puavmk>@MEoTHf9V+GU(lsr5xR*!FZ_Xue;XJt
+L9A`EByz>4R$yS>j
+
+literal 0
+HcmV?d00001
+
+diff --git a/evals/oracles/calculator/test_calculator.py b/evals/oracles/calculator/test_calculator.py
+new file mode 100644
+index 0000000..92e3c50
+--- /dev/null
++++ b/evals/oracles/calculator/test_calculator.py
+@@ -0,0 +1,13 @@
++"""Trusted hidden tests. Keep OUTSIDE the Agent's editable workspace."""
++import pytest
++
++from calculator import divide
++
++
++def test_normal_division():
++    assert divide(10, 2) == 5
++
++
++def test_division_by_zero_raises_value_error():
++    with pytest.raises(ValueError):
++        divide(10, 0)
+diff --git a/src/mini_coding_agent/agent.py b/src/mini_coding_agent/agent.py
+index c8b3545..d111c9f 100644
+--- a/src/mini_coding_agent/agent.py
++++ b/src/mini_coding_agent/agent.py
+@@ -393,7 +393,8 @@ def run_agent(
+             if decision.action != LifecycleAction.CONTINUE:
+                 return finish_agent(
+                     state=state, metrics=metrics, trace=trace,
+-                    decision=decision, preferred_text=message.content
++                    decision=decision, preferred_text=message.content,
++                    session=session, checkpoint_store=checkpoint_store,
+                 )
+ 
+             metrics.completion_rejections += 1
+@@ -714,7 +715,7 @@ def run_agent(
+                 tool_output = {
+                     "role": "tool",
+                     "tool_call_id": call.id,
+-                    "content": result,
++                    "content": f"Invalid tool arguments: {error}",
+                 }
+ 
+             turn_items.append(
+@@ -778,7 +779,9 @@ def run_agent(
+                 state=state,
+                 metrics=metrics,
+                 trace=trace,
+-                decision=decision
++                decision=decision,
++                session=session,
++                checkpoint_store=checkpoint_store,
+             )
+ 
+ 
+diff --git a/src/mini_coding_agent/eval_cli.py b/src/mini_coding_agent/eval_cli.py
+new file mode 100644
+index 0000000..dce8d7b
+--- /dev/null
++++ b/src/mini_coding_agent/eval_cli.py
+@@ -0,0 +1,80 @@
++"""Post-run evaluation CLI; it never starts or controls a live Agent."""
++from __future__ import annotations
++
++import argparse
++import json
++from dataclasses import asdict
++from pathlib import Path
++
++from .checkpoint import CheckpointStore, CheckpointError
++from .evaluation import (
++    EvalCase, EvaluationError, compare_results, evaluate_case,
++    load_results, summarize_results, write_result,
++)
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description="Mini Coding Agent evaluation")
++    commands = parser.add_subparsers(dest="command", required=True)
++
++    inspect = commands.add_parser("inspect", help="Evaluate a finished checkpoint")
++    inspect.add_argument("--case", type=Path, required=True)
++    inspect.add_argument("--checkpoint", type=Path, required=True)
++    inspect.add_argument("--workspace", type=Path, required=True)
++    inspect.add_argument("--oracle-root", type=Path,
++                         help="Trusted tests outside the editable Agent workspace")
++    inspect.add_argument("--output", type=Path)
++    inspect.add_argument("--run-id", help="Trial label, e.g. 01, 02, 03")
++    inspect.add_argument("--run-tests", action="store_true",
++                         help="Opt-in: execute trusted pytest files")
++
++    summarize = commands.add_parser("summarize", help="Summarize result JSON array")
++    summarize.add_argument("--results", type=Path, required=True)
++
++    collect = commands.add_parser("collect", help="Combine individual results into array")
++    collect.add_argument("--inputs", type=Path, nargs="+", required=True)
++    collect.add_argument("--output", type=Path, required=True)
++
++    compare = commands.add_parser("compare", help="Compare two result JSON arrays")
++    compare.add_argument("--baseline", type=Path, required=True)
++    compare.add_argument("--current", type=Path, required=True)
++
++    args = parser.parse_args()
++    try:
++        if args.command == "inspect":
++            workspace = args.workspace.resolve()
++            if args.output is not None and args.output.resolve().is_relative_to(workspace):
++                raise EvaluationError("--output must be outside workspace to avoid checkpoint drift")
++            session = CheckpointStore(args.checkpoint, workspace).load()
++            case = EvalCase.from_file(args.case)
++            result = evaluate_case(case, workspace, session,
++                                   run_tests=args.run_tests, oracle_root=args.oracle_root)
++            result.run_id = args.run_id
++            if args.output is not None:
++                write_result(args.output, result)
++            print(json.dumps(result.to_json(), indent=2, ensure_ascii=False))
++            return 0 if result.passed else 1
++        if args.command == "summarize":
++            print(json.dumps(asdict(summarize_results(load_results(args.results))),
++                             indent=2, ensure_ascii=False))
++            return 0
++        if args.command == "collect":
++            items = [json.loads(path.read_text(encoding="utf-8")) for path in args.inputs]
++            if not all(isinstance(x, dict) and "checks" in x for x in items):
++                raise EvaluationError("Inputs must be individual evaluation results")
++            args.output.parent.mkdir(parents=True, exist_ok=True)
++            args.output.write_text(json.dumps(items, ensure_ascii=False, indent=2),
++                                   encoding="utf-8")
++            return 0
++        if args.command == "compare":
++            print(json.dumps(compare_results(load_results(args.current),
++                                             load_results(args.baseline)),
++                             indent=2, ensure_ascii=False))
++            return 0
++    except (OSError, ValueError, KeyError, TypeError, CheckpointError) as exc:
++        parser.exit(2, f"evaluation error: {exc}\n")
++    return 2
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/src/mini_coding_agent/evaluation.py b/src/mini_coding_agent/evaluation.py
+new file mode 100644
+index 0000000..5750822
+--- /dev/null
++++ b/src/mini_coding_agent/evaluation.py
+@@ -0,0 +1,283 @@
++"""Lesson 27: independent, post-run evaluation of Mini Coding Agent.
++
++This module checks workspace artifacts and opt-in tests *independently* of
++AgentState's own CompletionReport. It never calls an LLM or executes shell.
++"""
++from __future__ import annotations
++
++import json
++import os
++import subprocess
++import sys
++from dataclasses import asdict, dataclass, field
++from pathlib import Path
++from typing import Any
++
++from .checkpoint import RunSession
++
++
++class EvaluationError(ValueError):
++    """Invalid evaluation specification or unsafe target path."""
++
++
++def _require_relative_path(raw: str) -> Path:
++    if not isinstance(raw, str) or not raw.strip():
++        raise EvaluationError("File path must be a non-empty string")
++    path = Path(raw)
++    if path.is_absolute() or any(part in ("..", "") for part in path.parts):
++        raise EvaluationError(f"Unsafe evaluation path: {raw!r}")
++    return path
++
++
++def _inside_workspace(workspace: Path, raw: str) -> Path:
++    relative = _require_relative_path(raw)
++    workspace = workspace.resolve()
++    target = (workspace / relative).resolve()
++    if not target.is_relative_to(workspace):
++        raise EvaluationError(f"Path escapes evaluation workspace: {raw!r}")
++    return target
++
++
++@dataclass(frozen=True)
++class EvalCase:
++    case_id: str
++    task: str
++    expected_outcome: str = "complete"
++    must_exist: list[str] = field(default_factory=list)
++    must_not_exist: list[str] = field(default_factory=list)
++    file_contains: dict[str, str] = field(default_factory=dict)
++    file_not_contains: dict[str, str] = field(default_factory=dict)
++    pytest_paths: list[str] = field(default_factory=list)
++    max_model_turns: int | None = None
++    max_tool_calls: int | None = None
++
++    @classmethod
++    def from_file(cls, path: Path) -> "EvalCase":
++        data = json.loads(path.read_text(encoding="utf-8"))
++        if not isinstance(data, dict):
++            raise EvaluationError("Evaluation case must be a JSON object")
++        allowed = set(cls.__dataclass_fields__)
++        unknown = set(data) - allowed
++        if unknown:
++            raise EvaluationError(f"Unknown case keys: {sorted(unknown)}")
++        try:
++            case = cls(**data)
++        except TypeError as exc:
++            raise EvaluationError(f"Invalid evaluation case: {exc}") from exc
++        case.validate()
++        return case
++
++    def validate(self) -> None:
++        if not self.case_id or not self.task:
++            raise EvaluationError("case_id and task are required")
++        if self.expected_outcome not in {"complete", "blocked", "stopped"}:
++            raise EvaluationError("Invalid expected_outcome")
++        if not any((self.must_exist, self.must_not_exist,
++                    self.file_contains, self.file_not_contains,
++                    self.pytest_paths)):
++            raise EvaluationError("At least one independent oracle check is required")
++        for files in (self.must_exist, self.must_not_exist, self.pytest_paths):
++            if not isinstance(files, list) or not all(isinstance(x, str) for x in files):
++                raise EvaluationError("Path entries must be lists of strings")
++            for path in files:
++                _require_relative_path(path)
++        for files in (self.file_contains, self.file_not_contains):
++            if not isinstance(files, dict):
++                raise EvaluationError("File text checks must be objects")
++            for path, text in files.items():
++                _require_relative_path(path)
++                if not isinstance(text, str) or not text:
++                    raise EvaluationError("Text conditions must be nonempty strings")
++        for limit in (self.max_model_turns, self.max_tool_calls):
++            if limit is not None and (type(limit) is not int or limit < 0):
++                raise EvaluationError("Budget limits must be nonnegative integers")
++
++
++@dataclass(frozen=True)
++class EvalCheck:
++    name: str
++    passed: bool
++    detail: str = ""
++
++
++@dataclass
++class EvalResult:
++    case_id: str
++    runtime_outcome: str | None
++    expected_outcome: str
++    external_success: bool
++    runtime_matches_expected: bool
++    passed: bool
++    false_complete: bool
++    model_turns: int
++    tool_calls: int
++    replans: int
++    duration_seconds: float | None
++    checks: list[EvalCheck]
++    efficiency_warnings: list[str]
++    run_id: str | None = None
++
++    def to_json(self) -> dict[str, Any]:
++        return asdict(self)
++
++
++def _check_files(case: EvalCase, workspace: Path) -> list[EvalCheck]:
++    checks: list[EvalCheck] = []
++    for raw in case.must_exist:
++        target = _inside_workspace(workspace, raw)
++        checks.append(EvalCheck(f"exists:{raw}", target.is_file(), "file must exist"))
++    for raw in case.must_not_exist:
++        target = _inside_workspace(workspace, raw)
++        checks.append(EvalCheck(f"absent:{raw}", not target.exists(), "path must be absent"))
++    for mapping, should_contain in ((case.file_contains, True),
++                                    (case.file_not_contains, False)):
++        for raw, needle in mapping.items():
++            target = _inside_workspace(workspace, raw)
++            text = target.read_text(encoding="utf-8") if target.is_file() else None
++            passed = text is not None and ((needle in text) == should_contain)
++            kind = "contains" if should_contain else "not_contains"
++            checks.append(EvalCheck(f"{kind}:{raw}", passed,
++                                    "matched" if passed else "file missing or content mismatch"))
++    return checks
++
++
++def _run_trusted_tests(
++    workspace: Path, oracle_root: Path, paths: list[str], timeout: int
++) -> EvalCheck:
++    # These test files belong to the evaluator, not the editable Agent workspace.
++    oracle_root = oracle_root.resolve()
++    test_paths = [_inside_workspace(oracle_root, raw) for raw in paths]
++    for path in test_paths:
++        if not path.is_file():
++            return EvalCheck("pytest", False, f"Oracle test missing: {path.name}")
++    environment = os.environ.copy()
++    environment["PYTHONPATH"] = str(workspace) + os.pathsep + environment.get("PYTHONPATH", "")
++    try:
++        result = subprocess.run(
++            [sys.executable, "-m", "pytest", "-q", *(str(x) for x in test_paths)],
++            cwd=workspace, env=environment, capture_output=True, text=True,
++            timeout=timeout, check=False,
++        )
++    except (OSError, subprocess.TimeoutExpired) as exc:
++        return EvalCheck("pytest", False, f"Test execution failed: {type(exc).__name__}")
++    # Keep a bounded, user-inspectable error preview; avoid dumping files/logs.
++    tail = (result.stdout + "\n" + result.stderr)[-1200:]
++    return EvalCheck("pytest", result.returncode == 0, tail)
++
++
++def evaluate_case(
++    case: EvalCase,
++    workspace: Path,
++    session: RunSession,
++    *,
++    run_tests: bool = False,
++    oracle_root: Path | None = None,
++    test_timeout: int = 120,
++) -> EvalResult:
++    """Evaluate an already-finished session; never ask the Agent to grade itself.
++
++    Only explicitly opted-in, trusted pytest paths are executed. The path
++    guard prevents traversal; it is NOT a sandbox for malicious Python tests.
++    """
++    case.validate()
++    workspace = Path(workspace).resolve()
++    if not workspace.is_dir():
++        raise EvaluationError("Workspace directory does not exist")
++    checks = _check_files(case, workspace)
++    if case.pytest_paths:
++        if run_tests and oracle_root is None:
++            raise EvaluationError("--run-tests requires a separate --oracle-root")
++        checks.append(
++            _run_trusted_tests(workspace, Path(oracle_root), case.pytest_paths, test_timeout)
++            if run_tests else
++            EvalCheck("pytest", False, "Not run: provide external --oracle-root and --run-tests")
++        )
++    metrics = session.metrics
++    outcome = metrics.run_outcome
++    external_success = bool(checks) and all(c.passed for c in checks)
++    outcome_match = outcome == case.expected_outcome
++    warnings: list[str] = []
++    if case.max_model_turns is not None and metrics.model_turns > case.max_model_turns:
++        warnings.append(f"model_turns {metrics.model_turns} > {case.max_model_turns}")
++    if case.max_tool_calls is not None and metrics.tool_calls > case.max_tool_calls:
++        warnings.append(f"tool_calls {metrics.tool_calls} > {case.max_tool_calls}")
++    # Success and budget measurements are kept separate: budget regressions
++    # should not turn a correct file result into a false claim of failure.
++    return EvalResult(
++        case_id=case.case_id,
++        runtime_outcome=outcome,
++        expected_outcome=case.expected_outcome,
++        external_success=external_success,
++        runtime_matches_expected=outcome_match,
++        passed=external_success and outcome_match,
++        false_complete=(outcome == "complete" and not external_success),
++        model_turns=metrics.model_turns,
++        tool_calls=metrics.tool_calls,
++        replans=metrics.replans,
++        duration_seconds=(metrics.duration if metrics.end_time is not None else None),
++        checks=checks,
++        efficiency_warnings=warnings,
++    )
++
++
++@dataclass(frozen=True)
++class SuiteSummary:
++    case_count: int
++    passed_count: int
++    pass_rate: float
++    false_complete_count: int
++    avg_successful_turns: float | None
++
++
++def summarize_results(results: list[EvalResult]) -> SuiteSummary:
++    passed_count = sum(result.passed for result in results)
++    successful_turns = [result.model_turns for result in results if result.passed]
++    return SuiteSummary(
++        case_count=len(results),
++        passed_count=passed_count,
++        pass_rate=passed_count / len(results) if results else 0.0,
++        false_complete_count=sum(result.false_complete for result in results),
++        avg_successful_turns=(sum(successful_turns) / len(successful_turns)
++                              if successful_turns else None),
++    )
++
++
++def compare_results(current: list[EvalResult], baseline: list[EvalResult]) -> dict[str, Any]:
++    """Compare the same case set. A missing case is an error, not a free pass."""
++    def key(r: EvalResult) -> tuple[str, str | None]:
++        return (r.case_id, r.run_id)
++
++    current_ids = {key(r) for r in current}
++    baseline_ids = {key(r) for r in baseline}
++    if len(current_ids) != len(current) or len(baseline_ids) != len(baseline):
++        raise EvaluationError("Duplicate (case_id, run_id) in evaluation results")
++    if current_ids != baseline_ids:
++        raise EvaluationError("Cannot compare different evaluation case/run sets")
++    old = {key(r): r for r in baseline}
++    regressions = sorted(r.case_id + (f"#{r.run_id}" if r.run_id else "")
++                         for r in current if old[key(r)].passed and not r.passed)
++    improvements = sorted(r.case_id + (f"#{r.run_id}" if r.run_id else "")
++                          for r in current if not old[key(r)].passed and r.passed)
++    return {
++        "baseline": asdict(summarize_results(baseline)),
++        "current": asdict(summarize_results(current)),
++        "regressions": regressions,
++        "improvements": improvements,
++    }
++
++
++def write_result(path: Path, result: EvalResult) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(json.dumps(result.to_json(), ensure_ascii=False, indent=2), encoding="utf-8")
++
++
++def load_results(path: Path) -> list[EvalResult]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, list):
++        raise EvaluationError("Results file must contain a JSON array")
++    result: list[EvalResult] = []
++    for item in data:
++        item = dict(item)
++        item["checks"] = [EvalCheck(**c) for c in item["checks"]]
++        result.append(EvalResult(**item))
++    return result
+diff --git a/src/mini_coding_agent/runtime_lifecycle.py b/src/mini_coding_agent/runtime_lifecycle.py
+index 35e393d..ecb0cb0 100644
+--- a/src/mini_coding_agent/runtime_lifecycle.py
++++ b/src/mini_coding_agent/runtime_lifecycle.py
+@@ -222,12 +222,13 @@ def check_lifecycle(
+ def evaluate_runtime(
+         state: AgentState,
+         metrics: AgentMetrics,
+-        last_meaning_progress_turn: int,
++        progress: ProgressTracker,
+         budget: RuntimeBudget,
+-):
++) -> LifecycleDecision:
++    """Convenience wrapper using the same ProgressTracker as run_agent()."""
+     return check_lifecycle(
+         state=state,
+         model_turns=metrics.model_turns,
+-        last_meaningful_progress_turn=last_meaning_progress_turn,
++        progress=progress,
+         budget=budget,
+-    )
+\ No newline at end of file
++    )
+diff --git a/tests/test_lesson27_evaluation.py b/tests/test_lesson27_evaluation.py
+new file mode 100644
+index 0000000..3b7d796
+--- /dev/null
++++ b/tests/test_lesson27_evaluation.py
+@@ -0,0 +1,253 @@
++"""Lesson 27: evaluation correctness and the two discovered regression paths."""
++from __future__ import annotations
++
++import json
++from pathlib import Path
++
++import pytest
++
++from mini_coding_agent.agent_metrics import AgentMetrics
++from mini_coding_agent.agent_trace import AgentTrace
++from mini_coding_agent.agent import finish_agent
++from mini_coding_agent.checkpoint import CheckpointStore, RunSession
++from mini_coding_agent.evaluation import (
++    EvalCase, EvaluationError, compare_results, evaluate_case,
++    load_results, summarize_results, write_result,
++)
++from mini_coding_agent.planning import create_agent_state
++from mini_coding_agent.runtime_lifecycle import (
++    LifecycleAction, LifecycleDecision, ProgressTracker,
++    RunOutcome, RuntimeBudget, StopReason, evaluate_runtime,
++)
++from mini_coding_agent.task_completion import evaluate_completion
++
++
++def _session(outcome: str = "complete", turns: int = 8) -> RunSession:
++    session = RunSession(state=create_agent_state("fix a calculator"))
++    session.metrics.run_outcome = outcome
++    session.metrics.model_turns = turns
++    session.metrics.tool_calls = 12
++    session.metrics.replans = 1
++    session.metrics.end_time = session.metrics.start_time + 10.0
++    return session
++
++
++def _case(**kwargs):
++    return EvalCase(case_id="calc", task="fix a calculator", **kwargs)
++
++
++def test_independent_oracle_passes_successful_artifact(tmp_path):
++    (tmp_path / "calc.py").write_text("raise ValueError('zero')", encoding="utf-8")
++    case = _case(must_exist=["calc.py"], file_contains={"calc.py": "raise ValueError"},
++                 max_model_turns=10)
++    result = evaluate_case(case, tmp_path, _session())
++    assert result.passed
++    assert result.external_success
++    assert result.runtime_matches_expected
++    assert result.efficiency_warnings == []
++    assert result.duration_seconds == pytest.approx(10.0)
++
++
++def test_runtime_complete_but_external_failure_is_false_complete(tmp_path):
++    (tmp_path / "calc.py").write_text("return a / b", encoding="utf-8")
++    result = evaluate_case(_case(file_contains={"calc.py": "raise ValueError"}),
++                           tmp_path, _session("complete"))
++    assert not result.passed
++    assert result.false_complete
++    assert not result.external_success
++
++
++def test_external_success_but_runtime_stopped_is_not_pass(tmp_path):
++    (tmp_path / "calc.py").write_text("raise ValueError()", encoding="utf-8")
++    result = evaluate_case(_case(file_contains={"calc.py": "raise ValueError"}),
++                           tmp_path, _session("stopped"))
++    assert not result.passed
++    assert result.external_success
++    assert not result.false_complete
++
++
++def test_absence_oracle(tmp_path):
++    result = evaluate_case(_case(must_not_exist=["old.py"]), tmp_path, _session())
++    assert result.passed
++    (tmp_path / "old.py").write_text("old", encoding="utf-8")
++    assert not evaluate_case(_case(must_not_exist=["old.py"]), tmp_path, _session()).passed
++
++
++def test_file_not_contains_requires_existing_file(tmp_path):
++    result = evaluate_case(_case(file_not_contains={"missing.py": "bad"}),
++                           tmp_path, _session())
++    assert not result.external_success
++    (tmp_path / "missing.py").write_text("good", encoding="utf-8")
++    assert evaluate_case(_case(file_not_contains={"missing.py": "bad"}),
++                         tmp_path, _session()).passed
++
++
++def test_missing_opt_in_tests_never_silently_pass(tmp_path):
++    oracle = tmp_path.parent / (tmp_path.name + "_oracle")
++    oracle.mkdir()
++    (oracle / "test_math.py").write_text("def test_one(): assert 1 == 1", encoding="utf-8")
++    case = _case(pytest_paths=["test_math.py"])
++    result = evaluate_case(case, tmp_path, _session())
++    assert not result.passed
++    assert any(check.name == "pytest" and not check.passed for check in result.checks)
++    result = evaluate_case(case, tmp_path, _session(), run_tests=True, oracle_root=oracle)
++    assert result.passed
++
++
++def test_bad_pytest_fails(tmp_path):
++    oracle = tmp_path.parent / (tmp_path.name + "_oracle")
++    oracle.mkdir()
++    (oracle / "test_bad.py").write_text("def test_bad(): assert False", encoding="utf-8")
++    result = evaluate_case(_case(pytest_paths=["test_bad.py"]),
++                           tmp_path, _session(), run_tests=True, oracle_root=oracle)
++    assert not result.external_success
++
++
++@pytest.mark.parametrize("unsafe", ["../escape.py", "/etc/passwd"])
++def test_refuse_paths_outside_workspace(tmp_path, unsafe):
++    with pytest.raises(EvaluationError):
++        evaluate_case(_case(must_exist=[unsafe]), tmp_path, _session())
++
++
++def test_refuse_symlink_outside_workspace(tmp_path):
++    outside = tmp_path.parent / "private.txt"
++    outside.write_text("secret", encoding="utf-8")
++    (tmp_path / "link.txt").symlink_to(outside)
++    with pytest.raises(EvaluationError):
++        evaluate_case(_case(must_exist=["link.txt"]), tmp_path, _session())
++
++
++def test_case_requires_external_oracle(tmp_path):
++    with pytest.raises(EvaluationError):
++        evaluate_case(_case(), tmp_path, _session())
++
++
++def test_case_json_rejects_unknown_keys(tmp_path):
++    file = tmp_path / "case.json"
++    file.write_text(json.dumps({"case_id": "x", "task": "x", "must_exist": ["x"],
++                                "prompt_injection": "anything"}))
++    with pytest.raises(EvaluationError):
++        EvalCase.from_file(file)
++
++
++def test_efficiency_budget_is_warning_not_correctness_failure(tmp_path):
++    (tmp_path / "ok.py").write_text("ok", encoding="utf-8")
++    result = evaluate_case(_case(must_exist=["ok.py"], max_model_turns=5,
++                                 max_tool_calls=10), tmp_path, _session())
++    assert result.passed
++    assert len(result.efficiency_warnings) == 2
++
++
++def test_result_roundtrip_and_suite_comparison(tmp_path):
++    (tmp_path / "ok.py").write_text("yes", encoding="utf-8")
++    good = evaluate_case(_case(must_exist=["ok.py"]), tmp_path, _session())
++    bad = evaluate_case(_case(must_exist=["ok.py"]), tmp_path, _session("stopped"))
++    result_path = tmp_path / "one.json"
++    write_result(result_path, good)
++    assert json.loads(result_path.read_text())["case_id"] == "calc"
++    old = tmp_path / "old.json"
++    new = tmp_path / "new.json"
++    old.write_text(json.dumps([bad.to_json()]), encoding="utf-8")
++    new.write_text(json.dumps([good.to_json()]), encoding="utf-8")
++    diff = compare_results(load_results(new), load_results(old))
++    assert diff["improvements"] == ["calc"]
++    assert diff["regressions"] == []
++    assert summarize_results(load_results(new)).pass_rate == 1
++    diff_reversed = compare_results(load_results(old), load_results(new))
++    assert diff_reversed["regressions"] == ["calc"]
++
++
++def test_suite_different_cases_not_comparable(tmp_path):
++    (tmp_path / "ok.py").write_text("yes", encoding="utf-8")
++    old = evaluate_case(_case(must_exist=["ok.py"]), tmp_path, _session())
++    new = evaluate_case(EvalCase("other", "task", must_exist=["ok.py"]),
++                        tmp_path, _session())
++    with pytest.raises(EvaluationError):
++        compare_results([old], [new])
++
++
++def test_evaluate_runtime_wrapper_uses_tracker_not_old_kwarg():
++    session = _session("stopped")
++    decision = evaluate_runtime(session.state, session.metrics,
++                                ProgressTracker(), RuntimeBudget())
++    assert decision.action == LifecycleAction.CONTINUE
++
++
++def test_finish_agent_persists_final_outcome(tmp_path):
++    session = _session("stopped")
++    workspace = tmp_path / "workspace"
++    workspace.mkdir()
++    store = CheckpointStore(tmp_path / "checkpoint.json", workspace)
++    decision = LifecycleDecision(
++        action=LifecycleAction.TERMINATE,
++        report=evaluate_completion(session.state),
++        outcome=RunOutcome.STOPPED,
++        reason=StopReason.NO_PROGRESS,
++    )
++    result = finish_agent(
++        state=session.state, metrics=session.metrics, trace=session.trace,
++        decision=decision, session=session, checkpoint_store=store,
++    )
++    assert "no_progress" in result
++    assert store.load().metrics.run_outcome == "stopped"
++    assert store.load().metrics.stop_reaseon == "no_progress"
++
++class FakeMessage:
++    def __init__(self, tool_calls=None):
++        self.tool_calls = tool_calls or []
++        self.content = "model summary"
++
++    def model_dump(self, **_kwargs):
++        message = {"role": "assistant", "content": self.content}
++        if self.tool_calls:
++            message["tool_calls"] = [{"id": x.id, "type": "function",
++                                      "function": {"name": x.function.name,
++                                                   "arguments": x.function.arguments}}
++                                     for x in self.tool_calls]
++        return message
++
++
++@pytest.mark.parametrize("with_tool", [False, True])
++def test_agent_end_paths_persist_final_checkpoint(tmp_path, monkeypatch, with_tool):
++    """Regression: both no-tool and tool-batch termination must save outcome."""
++    from types import SimpleNamespace
++    from mini_coding_agent import agent
++
++    def fake_check(state, model_turns, progress, budget):
++        final = model_turns >= 1
++        return LifecycleDecision(
++            action=LifecycleAction.FINALIZE if final else LifecycleAction.CONTINUE,
++            report=evaluate_completion(state),
++            outcome=RunOutcome.COMPLETE if final else None,
++        )
++
++    calls = ([SimpleNamespace(id="call_1", function=SimpleNamespace(
++        name="read_file", arguments='{"path":"missing"}'))] if with_tool else [])
++    monkeypatch.setattr(agent, "check_lifecycle", fake_check)
++    monkeypatch.setattr(agent, "call_model", lambda *args, **kwargs: FakeMessage(calls))
++    monkeypatch.setattr(agent, "compress_history", lambda **kwargs: None)
++    monkeypatch.setattr(agent, "print_fixed_context_breakdown", lambda **kwargs: None)
++    monkeypatch.setattr(agent, "print_context_debug", lambda **kwargs: None)
++    monkeypatch.setattr(agent, "print_state_debug", lambda state: None)
++    # Running task must not touch actual workspace files. A guard rejection
++    # is sufficient to complete one full, persisted tool-response turn.
++    checkpoint = tmp_path / "run.json"
++    agent.run_agent("test safe completion", checkpoint_path=str(checkpoint))
++    stored = CheckpointStore(checkpoint, agent.WORKSPACE).load()
++    assert stored.metrics.run_outcome == "complete"
++    assert stored.metrics.model_turns == 1
++    if with_tool:
++        assert len(stored.history_turns) == 1
++        assert stored.history_turns[0][-1]["role"] == "tool"
++
++
++def test_compare_multiple_trials_by_run_id(tmp_path):
++    (tmp_path / "ok.py").write_text("pass", encoding="utf-8")
++    result_1 = evaluate_case(_case(must_exist=["ok.py"]), tmp_path, _session())
++    result_2 = evaluate_case(_case(must_exist=["ok.py"]), tmp_path, _session("stopped"))
++    result_1.run_id = "1"
++    result_2.run_id = "2"
++    assert len({(r.case_id, r.run_id) for r in (result_1, result_2)}) == 2
++    assert compare_results([result_1, result_2], [result_1, result_2])["regressions"] == []
++    with pytest.raises(EvaluationError):
++        compare_results([result_1, result_1], [result_1, result_2])

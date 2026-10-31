@@ -5,6 +5,7 @@ import shlex
 
 # 权限
 class Permission(Enum):
+    """这个工具需要什么权限？"""
     SAFE = "safe"
     WRITE = "write"
     CONFIRM = "confirm"
@@ -23,7 +24,9 @@ TOOL_PERMISSIONS = {
     "search_text": Permission.SAFE,
     "set_requirements": Permission.SAFE,
     "set_goal": Permission.SAFE,
-    "replan": Permission.SAFE
+    "replan": Permission.SAFE,
+    "ask_user": Permission.SAFE,
+    "delete_file": Permission.CONFIRM,
 }
 
 # 被禁止的shell语法
@@ -80,6 +83,7 @@ def classify_command(command: str) -> Permission:
         return Permission.SAFE
 
     return Permission.BLOCKED
+
 
 def classify_git_command(
         args: list[str]
@@ -151,16 +155,23 @@ def classify_uv_command(
 
     return Permission.BLOCKED
 
-def ask_for_confirmation(command: str) -> bool:
+def ask_for_confirmation(
+        command: str,
+        detail: str | None = None,
+) -> bool:
     print("\n⚠️ Agent wants to run:")
     print(command)
 
-    answer = input(
-        "\nDo you want to allow this command? [y/N]: "
-    )
+    if detail:
+        print(detail)
+
+    try:
+        answer = input(
+            "\nDo you want to allow this operation? [y/N]: "
+        )
+    except (EOFError, KeyboardInterrupt):
+        return False
 
     answer = answer.strip().lower()
-
-    print(f"DEBUG answer: {answer!r}")
 
     return answer in {"y", "yes"}

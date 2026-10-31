@@ -1,10 +1,10 @@
-'''运行时上下文渲染（非 plan/pl 逻辑，从 planing.py 拆出）'''
+'''运行时上下文渲染（非 plan 逻辑，从旧 planning 前身模块拆出）'''
 
 from __future__ import annotations
 
-from .planing import AgentState
+from .planning import AgentState
 from .requirements import build_requirement_context
-
+from .task_state import get_ready_tasks
 
 def build_goal_context(
         state: AgentState
@@ -43,11 +43,27 @@ def build_plan_context(
     ]
 
     for todo in state.plan.items:
-        lines.append(
+        line = (
             f"- [{todo.status.value}]"
             f"{todo.id}"
             f"{todo.content}"
         )
+
+        if todo.depends_on:
+            deps = ", ".join(str(dep_id) for dep_id in todo.depends_on)
+            line += f" [depends_on: {deps}]"
+
+        ready_ids = [
+            todo.id
+            for todo in get_ready_tasks(state)
+        ]
+
+        line += (
+            f"\n READY TASK IDS: {ready_ids}"
+        )
+
+        lines.append(line)
+
 
     if state.plan.replan_count > 0:
         lines.append("")
@@ -55,6 +71,7 @@ def build_plan_context(
             "Previous plan revisions: "
             f"{state.plan.replan_count}"
         )
+
 
     return "\n".join(lines)
 

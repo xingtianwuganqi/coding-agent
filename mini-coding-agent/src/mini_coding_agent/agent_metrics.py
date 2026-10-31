@@ -50,8 +50,9 @@ class AgentMetrics:
     repeated_failures: int = 0
 
     # verification版本中新增
-    # 
+    # 完成检查次数
     completion_checks: int = 0
+    # 完成拒绝次数
     completion_rejections: int = 0
 
     # requirement
@@ -66,6 +67,9 @@ class AgentMetrics:
         default_factory=dict
     )
 
+    # 第24课：Runtime 最终结果（与 CompletionStatus 分开）
+    run_outcome: str | None = None
+    stop_reaseon: str | None = None
 
     # 给Metrics增加记录工具的方法
     def record_tool_call(
@@ -174,6 +178,9 @@ class AgentMetrics:
             f"Repeated failures: "
             f"{self.repeated_failures}"
         )
+
+        print(f"Run outcome: {self.run_outcome}")
+        print(f"Stop reason: {self.stop_reaseon}")
 
         print("=============================\n")
 

@@ -16,7 +16,7 @@ from mini_coding_agent.config import (
     WORKSPACE,
 )
 from mini_coding_agent.permission import Permission, classify_command
-from mini_coding_agent.planing import AgentState, TodoItem, TaskStatus
+from mini_coding_agent.planning import AgentState, TodoItem, TaskStatus
 from mini_coding_agent.agent_metrics import AgentMetrics
 from mini_coding_agent.agent_trace import AgentTrace
 from mini_coding_agent.guard import guard_tool_call
@@ -65,6 +65,15 @@ def test_tools_schema_shape():
 def test_system_prompt_non_empty():
     assert isinstance(SYSTEM_PROMPT, str)
     assert SYSTEM_PROMPT.strip()
+
+
+def test_system_prompt_documents_dependency_and_replan_rules():
+    assert "depends_on" in SYSTEM_PROMPT
+    assert "reuse_from_task_id" in SYSTEM_PROMPT
+    assert "READY TASK IDS" in SYSTEM_PROMPT
+    assert "dependency graph" in SYSTEM_PROMPT
+    assert "old plan" in SYSTEM_PROMPT
+    assert "new plan" in SYSTEM_PROMPT
 
 
 @pytest.mark.parametrize(
@@ -120,6 +129,61 @@ def test_guard_blocks_retrieval_without_plan():
         AgentMetrics(), AgentTrace(),
     )
     assert "RUNTIME GUARD" in result
+
+
+def test_guard_allows_retrieval_before_requirements():
+    state = AgentState()
+    state.goal.locked = True
+
+    result = guard_tool_call(
+        "read_file", {"path": "pyproject.toml"}, state,
+        AgentMetrics(), AgentTrace(),
+    )
+
+    assert result is None
+    assert state.pre_plan_inspection_count == 1
+    assert not state.requirements.locked
+
+
+def test_guard_blocks_actions_before_requirements():
+    state = AgentState()
+    state.goal.locked = True
+
+    result = guard_tool_call(
+        "write_file", {"path": "notes.txt", "content": "hi"}, state,
+        AgentMetrics(), AgentTrace(),
+    )
+
+    assert "requirements" in result
+    assert "set_requirements" in result
+    assert state.pre_plan_inspection_count == 0
+
+
+def test_guard_blocks_retrieval_before_goal():
+    state = AgentState()
+
+    result = guard_tool_call(
+        "read_file", {"path": "pyproject.toml"}, state,
+        AgentMetrics(), AgentTrace(),
+    )
+
+    assert "set_goal" in result
+    assert state.pre_plan_inspection_count == 0
+
+
+def test_guard_reports_requirements_step_when_inspection_budget_spent():
+    state = AgentState()
+    state.goal.locked = True
+    state.pre_plan_inspection_count = 4
+
+    result = guard_tool_call(
+        "search_text", {"query": "guard_tool_call"}, state,
+        AgentMetrics(), AgentTrace(),
+    )
+
+    assert "set_requirements" in result
+    assert "set_plan" in result
+    assert state.pre_plan_inspection_count == 4
 
 
 def test_guard_blocks_requirements_after_locking():

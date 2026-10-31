@@ -1,0 +1,655 @@
+"""Tool call signature helper and guarded tool dispatcher."""
+
+import json
+import subprocess
+from dataclasses import asdict
+
+from .permission import (
+    Permission,
+    TOOL_PERMISSIONS,
+)
+from .approval import authorize_tool_call, policy_for_tool
+from .planning import (
+    AgentState,
+    set_plan,
+    get_plan,
+    update_task,
+    # record_progress,
+    ReplanReason,
+    replan,
+)
+from .evidence import (
+    CommandResult,
+    format_command_result,
+    record_command_evidence,
+    mark_workspace_changed,
+)
+from .tools import (
+    list_files,
+    read_file,
+    search_text,
+    ask_user,
+    ask_user_choice,
+    write_file,
+    replace_text,
+    run_command,
+    delete_file,
+)
+
+from .agent_metrics import (
+    AgentMetrics,
+    is_test_command
+)
+
+from .agent_trace import AgentTrace
+from .goal import (
+    set_goal
+)
+
+from .failure_recovery import (
+    RecoveryAction,
+    clear_failure_streak,
+    handle_tool_failure,
+    build_failure_result
+)
+
+from .verification import record_command_verification
+
+from .tool_result import ToolResult
+from .verification import is_code_file
+from .requirements import set_requirements
+
+WRITE_TOOLS = {
+    "write_file",
+    "replace_text"
+}
+
+
+def record_workspace_change(
+        state: AgentState,
+        path: str,
+) -> None:
+    '''
+    记录workspace发生变化，如果是code_file,记录codex_revison 
+
+        
+    1.先记录，在write_file和replace_text下，先记录发生变化code_revision，
+    在run_command中执行完验证后，再记录当时的code_revision
+    2.在has
+    '''
+    state.workspace_revision += 1
+    state.changed_files.add(path)
+
+    if is_code_file(path):
+        state.code_revision += 1
+
+def format_confirmation_detail(
+        name: str,
+        arguments: dict,
+) -> str:
+    '''
+    构造 y/N 确认时展示给用户的详细信息。
+
+    delete_file 必须显示目标文件路径，否则用户无法判断是否放行。
+    '''
+    if name == "delete_file":
+        return (
+            "Target file: "
+            f"{arguments.get('path', '<unknown>')}"
+        )
+
+    return (
+        "Arguments: "
+        + json.dumps(arguments, ensure_ascii=False)
+    )
+
+
+def execute_tool(
+        name: str,
+        arguments: dict,
+        state: AgentState,
+        metrics: AgentMetrics,
+        trace: AgentTrace,
+        *,
+        preauthorized: bool = False,
+) -> ToolResult:
+    '''
+    真正的调用工具
+    '''
+    try:
+        # 未知工具直接返回，避免被误判为被禁止的工具
+        if name not in TOOL_PERMISSIONS:
+            return ToolResult(
+                success=False,
+                error=f"Unknown tool: {name}"
+            )
+
+        # Direct callers must still pass the same policy and approval gate.
+        # The Agent Loop obtains approval BEFORE Checkpoint.before_tool,
+        # then uses preauthorized=True to prevent a second prompt.
+        if preauthorized:
+            if policy_for_tool(name, arguments) == Permission.BLOCKED:
+                return ToolResult.fail(
+                    error=f"POLICY_BLOCKED: {name}",
+                    failure_code="POLICY_BLOCKED",
+                )
+        else:
+            authorization = authorize_tool_call(name, arguments)
+            if not authorization.allowed:
+                code = (
+                    "USER_DENIED" if authorization.status.value == "denied"
+                    else "POLICY_BLOCKED"
+                )
+                return ToolResult.fail(
+                    error=authorization.reason,
+                    failure_code=code,
+                )
+
+        if name == "set_goal":
+            return set_goal(
+                state=state,
+                **arguments
+            )
+
+        if name == "list_files":
+            return list_files(**arguments)
+             
+        if name == "read_file":
+            return read_file(**arguments)
+
+        if name == "write_file":
+            if (
+                name in WRITE_TOOLS
+                and metrics.first_write_turn is None
+            ):
+                metrics.first_write_turn = metrics.model_turns
+
+            result = write_file(**arguments)
+            if result.changed:
+                # mark_workspace_changed(state)
+                record_workspace_change(
+                    state=state,
+                    path=arguments["path"]
+                )
+
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
+
+                return ToolResult(
+                    success=True,
+                    content=json.dumps(asdict(result)),
+                    error=result.message,
+                )
+            else:
+                return ToolResult(
+                    success=False,
+                    content=result.message,
+                    error=result.message
+                )
+
+        if name == "replace_text":
+            if (
+                name in WRITE_TOOLS
+                and metrics.first_write_turn is None
+            ):
+                metrics.first_write_turn = metrics.model_turns
+                
+            result = replace_text(**arguments)
+            if result.changed:
+                # mark_workspace_changed(state)
+                record_workspace_change(
+                    state=state,
+                    path=arguments["path"]
+                )
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
+                return ToolResult(
+                    success=True,
+                    content=json.dumps(asdict(result)),
+                    error=result.message,
+                )
+            else:
+                return ToolResult(
+                    success=False,
+                    error=result.message 
+                )
+
+        if name == "run_command":
+            
+            if (
+                is_test_command(
+                    arguments.get("command", "")
+                )
+            ):
+                metrics.tests_run += 1
+
+            # 执行命令
+            result = run_command(
+                state=state,
+                metrics=metrics,
+                approved=True,
+                **arguments
+            )
+
+            if isinstance(
+                result,
+                CommandResult
+            ):
+                record_command_verification(
+                    state=state,
+                    command=arguments["command"],
+                    result=result
+                )
+                # 先执行write_file或者replace_text,会更新workspace_revision += 1
+                # 命令执行完后，
+                # 将执行命令的结果记录下来
+                # 更新state的evidence，让 state.evidence[EvidenceType.TESTS_PASSED] = state.workspace_revision
+                record_command_evidence(
+                    state,
+                    result
+                )
+
+                output = format_command_result(result=result)
+                if result.returncode == 0:
+                    tool_result = ToolResult.ok(
+                        content=output,
+                        return_code=result.returncode,
+                    )
+                    return tool_result
+                return ToolResult.fail(
+                    error=output,
+                    return_code=result.returncode,
+                )
+
+            # Timeout/error strings do not establish successful verification.
+            return ToolResult(
+                success=False,
+                error=result,
+            )
+
+        if name == "set_plan":
+
+            result = set_plan(
+                state=state,
+                **arguments,
+            )
+
+            if result.success:
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
+                if metrics.plan_created_turn is None:
+                    metrics.plan_created_turn = (
+                        metrics.model_turns
+                    )
+
+                metrics.plan_revision = 1
+
+            return result
+
+        if name == "update_task":
+            return update_task(
+                state=state,
+                metrics=metrics,
+                **arguments,
+            )
+
+        if name == "get_plan":
+            return get_plan(state)
+
+        if name == "search_text":
+            return search_text(
+                **arguments
+            )
+
+        if name == "ask_user":
+            return ask_user(
+                **arguments
+            )
+
+        if name == "set_requirements":
+            def resolve_target_with_user(
+                    target: str,
+                    matches: list[str],
+            ) -> str | None:
+                selected = ask_user_choice(
+                    question=(
+                        f"Multiple files match the requirement "
+                        f"target '{target}'. Which file should "
+                        "be changed?"
+                    ),
+                    options=matches,
+                )
+
+                trace.record(
+                    turn=metrics.model_turns,
+                    event_type="requirement_target_choice",
+                    name="set_requirements",
+                    detail=(
+                        f"target={target}; "
+                        f"selected={selected}"
+                    ),
+                )
+
+                return selected
+
+            result = set_requirements(
+                state=state,
+                **arguments,
+                resolver=resolve_target_with_user,
+            )
+
+            if metrics.requirements_created_turn is None:
+                metrics.requirements_created_turn = metrics.model_turns
+                trace.record(
+                    turn=metrics.model_turns,
+                    event_type="requirements",
+                    name="set_requirements",
+                    detail=(
+                        f"count="
+                        f"{len(state.requirements.items)}"
+                    )
+                )
+
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
+
+            return result
+
+        if name == "replan":
+            try:
+                reason = ReplanReason(
+                    arguments["reason"]
+                )
+            except ValueError:
+                return ToolResult.fail(
+                    error=(
+                        "Invalid replan reason"
+                    )
+                )
+
+            result = replan(
+                state=state,
+                items=arguments["items"],
+                reason=reason,
+                explanation=arguments["explanation"],
+                current_turn=metrics.model_turns
+            )
+            if result.success:
+                metrics.replans += 1
+                metrics.plan_revision = state.plan.revision
+                reason_key = reason.value
+                metrics.replans_by_reason[
+                    reason_key
+                ] = (
+                    metrics.replans_by_reason.get(
+                        reason_key,0
+                    ) + 1
+                )
+
+                trace.record(
+                    turn=metrics.model_turns,
+                    event_type="replan",
+                    name=(
+                        f"plan_v"
+                        f"{state.plan.revision}"
+                    ),
+                    detail=(
+                        f"reason={reason.value};"
+                        f"{arguments['explanation']}"
+                    )
+                )
+
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
+
+            return  result
+
+        if name == "delete_file":
+            result = delete_file(**arguments)
+            if not result.success:
+                return ToolResult(
+                    success=False,
+                    error=result.message,
+                )
+
+            if result.changed:
+                # record_progress(
+                #     state=state,
+                #     turn=metrics.model_turns
+                # )
+                # mark_workspace_changed(state)
+                record_workspace_change(
+                    state=state,
+                    path=arguments["path"]
+                )
+
+            return ToolResult(
+                success=True,
+                content=result.message,
+            )
+
+
+        return ToolResult(
+            success=False,
+            error=f"Unknown tool: {name}"
+        )
+    except subprocess.TimeoutExpired:
+        return ToolResult(
+            success=False,
+            error=(
+                "Command timed out "
+                "after 30 seconds."
+            )
+        )
+    except Exception as e:
+        return ToolResult(
+            success=False,
+            error=f"Tool error: {e}"
+        )
+
+
+
+def execute_tool_with_recovery(
+    name: str,
+    arguments: dict,
+    state,
+    metrics,
+    trace,
+    current_turn: int,
+    *,
+    preauthorized: bool = False,
+) -> ToolResult:
+
+    '''
+    Runtime 的故障恢复入口，在 execute_tool 外层包一层恢复策略。
+
+    流程：
+    1. 先执行一次工具；成功则清除连续失败计数并直接返回。
+    2. 失败时通过 handle_tool_failure 对错误分类、记录签名并得到
+       FailureDecision 和连续失败次数 failure_count，同时写入 trace。
+    3. 仅当 decision.auto_retry 为 True（瞬时错误 + 只读安全工具 +
+       首次失败）时，Runtime 自动重试一次：
+       - 重试成功：记 recovered_failures、清除失败 streak、写 recovered
+         trace 并返回重试结果；
+       - 重试仍失败：再次 handle_tool_failure，failure_count >= 2 时记
+         repeated_failures，并用 build_failure_result 返回带恢复指引的
+         失败结果。
+    4. 不允许自动重试时，failure_count >= 2 时记 repeated_failures，
+       直接返回 build_failure_result 构造的失败结果（含 RUNTIME
+       RECOVERY 指引），由模型决定下一步。
+
+    注意：最多只会自动重试一次，不会无限重试。
+    '''
+
+    # Permission denial is a policy outcome, not a tool execution or a
+    # recoverable failure. Authorize once when this API is called directly.
+    if not preauthorized:
+        authorization = authorize_tool_call(name, arguments)
+        if not authorization.allowed:
+            return ToolResult.fail(
+                error=authorization.reason,
+                failure_code=(
+                    "USER_DENIED" if authorization.status.value == "denied"
+                    else "POLICY_BLOCKED"
+                ),
+            )
+        preauthorized = True
+
+    # =========================
+    # 第一次执行
+    # =========================
+
+    metrics.tool_executions += 1
+
+    result = execute_tool(
+        name=name,
+        arguments=arguments,
+        state=state,
+        metrics=metrics,
+        trace=trace,
+        preauthorized=preauthorized,
+    )
+
+    # =========================
+    # 成功
+    # =========================
+
+    if result.success:
+
+        clear_failure_streak(
+            state
+        )
+
+        return result
+
+    # Explicit denial / policy blocking is NOT an execution failure;
+    # never put it through the generic retry or failure-streak mechanism.
+    if result.failure_code in {"USER_DENIED", "POLICY_BLOCKED"}:
+        return result
+
+    # =========================
+    # 第一次失败
+    # =========================
+
+    metrics.tool_failures += 1
+
+    decision, failure_count = (
+        handle_tool_failure(
+            tool_name=name,
+            arguments=arguments,
+            result=result,
+            state=state,
+        )
+    )
+
+    trace.record(
+        turn=current_turn,
+        event_type="tool_failure",
+        name=name,
+        detail=(
+            f"kind={decision.kind.value}, "
+            f"action={decision.action.value}, "
+            f"count={failure_count}, "
+            f"error={result.error[:200]}"
+        ),
+    )
+
+    # =========================
+    # Runtime 自动 Retry
+    # =========================
+
+    if decision.auto_retry:
+
+        metrics.auto_retries += 1
+
+        trace.record(
+            turn=current_turn,
+            event_type="retry",
+            name=name,
+            detail=(
+                "Runtime automatic retry"
+            ),
+        )
+
+        metrics.tool_executions += 1
+
+        retry_result = execute_tool(
+            name=name,
+            arguments=arguments,
+            state=state,
+            metrics=metrics,
+            trace=trace,
+            preauthorized=preauthorized,
+        )
+
+        # ---------------------
+        # retry 成功
+        # ---------------------
+
+        if retry_result.success:
+
+            metrics.recovered_failures += 1
+
+            clear_failure_streak(
+                state
+            )
+
+            trace.record(
+                turn=current_turn,
+                event_type="recovered",
+                name=name,
+                detail=(
+                    "Automatic retry succeeded"
+                ),
+            )
+
+            return retry_result
+
+        # ---------------------
+        # retry 仍然失败
+        # ---------------------
+
+        metrics.tool_failures += 1
+
+        second_decision, second_count = (
+            handle_tool_failure(
+                tool_name=name,
+                arguments=arguments,
+                result=retry_result,
+                state=state,
+            )
+        )
+
+        if second_count >= 2:
+
+            metrics.repeated_failures += 1
+
+        return build_failure_result(
+            original_result=retry_result,
+            decision=second_decision,
+            failure_count=second_count,
+        )
+
+    # =========================
+    # 不能 Retry
+    # =========================
+
+    if failure_count >= 2:
+
+        metrics.repeated_failures += 1
+
+    return build_failure_result(
+        original_result=result,
+        decision=decision,
+        failure_count=failure_count,
+    )

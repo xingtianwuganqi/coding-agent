@@ -11,7 +11,7 @@ These tests pin the documented contract so that regression cannot
 return silently.
 """
 
-from mini_coding_agent.planing import (
+from mini_coding_agent.planning import (
     TASK_TRANSITIONS,
     TaskStatus,
     TodoItem,
