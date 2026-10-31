@@ -2232,21 +2232,7 @@ CLI 的定位同样明确："Post-run evaluation CLI; it never starts or control
 
 评测器的异常处理收口在一个 `except (OSError, ValueError, KeyError, TypeError, CheckpointError)`，统一以退出码 2 + `evaluation error: {exc}` 报告——评测工具自身出错与被评测任务失败（退出码 1）是两个不同的信号，不会混淆。
 
-### 27.7 测试即规格：tests/test_lesson27_evaluation.py
-
-`tests/test_lesson27_evaluation.py` 用 20 个左右的用例把上述语义逐条钉死，代表性的有：
-
-- `test_runtime_complete_but_external_failure_is_false_complete`：谎报检测的正例；
-- `test_refuse_paths_outside_workspace` / `test_refuse_symlink_outside_workspace`：参数化传入 `../evil`、绝对路径等不安全输入，并用**符号链接**指向 workspace 外来验证 `_inside_workspace` 是先 resolve 再比较（`is_relative_to`），软链接绕不过 containment；
-- `test_case_json_rejects_unknown_keys`：拼写错误的 case JSON 被拒；
-- `test_efficiency_budget_is_warning_not_correctness_failure`：超预算仍 passed，只有 warning；
-- `test_compare_multiple_trials_by_run_id`：多 trial 配对对比；
-- `test_finish_agent_persists_final_outcome` / `test_agent_end_paths_persist_final_checkpoint`：从另一侧保证前提成立——**metrics 里的 `run_outcome` 必须在每条结束路径上被写入最终 checkpoint**，否则评测器读到的是陈旧状态；
-- `test_evaluate_runtime_wrapper_uses_tracker_not_old_kwarg`：守住 runtime 包装层与 metrics tracker 的接线不被改坏。
-
-### 本章结论
-
-Lesson 27 给整个课程补上了"如何证明系统有效"的一环：
+### 本章结论Lesson 27 给整个课程补上了"如何证明系统有效"的一环：
 
 ```text
 谁说了算?        外部 oracle，不是 Agent 的 CompletionReport

@@ -95,7 +95,11 @@ def finish_agent(
 
     # 已通过 Runtime 检查，才允许返回模型此前的总结文字
     if decision.outcome == RunOutcome.COMPLETE:
-        return preferred_text.strip() or "Outcome: complete\nAll completion requirements satisfied."
+        final_text = (
+            preferred_text.strip()
+            or "Outcome: complete\nAll completion requirements satisfied."
+        )
+        return final_text
 
     missing = [f"- {r.name}: {r.reason}" for r in decision.report.missing]
     changed = sorted(state.changed_files)
@@ -122,6 +126,8 @@ def run_agent(
     Resume NEVER auto-replays an uncertain tool call. Use a separate
     checkpoint path for each independent task.
     """
+    
+    last_model_content = ""
 
     if resume and not checkpoint_path:
         raise CheckpointError("--resume requires --checkpoint")
@@ -200,6 +206,7 @@ def run_agent(
                 metrics=metrics,
                 trace=trace,
                 decision=decision,
+                preferred_text=last_model_content,
                 session=session,
                 checkpoint_store=checkpoint_store,
             )
@@ -277,6 +284,7 @@ def run_agent(
                 metrics=metrics,
                 trace=trace,
                 decision=decision,
+                preferred_text=last_model_content,
                 session=session,
                 checkpoint_store=checkpoint_store
             )
@@ -344,6 +352,8 @@ def run_agent(
                     os.getenv("MINI_AGENT_DEBUG") == "1"
                 ),
             )
+            if message.content and message.content.strip():
+                last_model_content = message.content
         except ModelCallError as error:
             failed_report = check_lifecycle(
                 state=state,
@@ -362,6 +372,7 @@ def run_agent(
                 metrics=metrics, 
                 trace=trace, 
                 decision=decision,
+                preferred_text=last_model_content,
                 session=session,
                 checkpoint_store=checkpoint_store
             )
@@ -783,6 +794,7 @@ def run_agent(
                 metrics=metrics,
                 trace=trace,
                 decision=decision,
+                preferred_text=last_model_content,
                 session=session,
                 checkpoint_store=checkpoint_store
             )
