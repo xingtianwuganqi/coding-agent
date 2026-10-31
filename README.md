@@ -48,7 +48,3 @@ uv run pytest
 ## 作者
 
 jingjun - 254032134@qq.com
-
-## 工作区根目录路径
-
-/Users/jingjun/Desktop/Githup/coding-agent/mini-coding-agent
